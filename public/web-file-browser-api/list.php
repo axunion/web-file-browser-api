@@ -1,12 +1,12 @@
 <?php
 
-require __DIR__ . '/../src/get-directory-structure.php';
-
-header('Content-Type: application/json');
+require __DIR__ . '/../src/get_directory_structure.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    header('Content-Type: application/json');
+
     try {
-        $data_dir = realpath(__DIR__ . '/../data');
+        $data_dir = realpath(__DIR__ . '/data');
         $sub_path = isset($_GET['path']) ? $_GET['path'] : '';
         $target_path = realpath($data_dir . DIRECTORY_SEPARATOR . $sub_path);
 

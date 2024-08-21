@@ -1,16 +1,16 @@
 <?php
 
-require __DIR__ . '/../src/save-uploaded-file.php';
-
-header('Content-Type: application/json');
+require __DIR__ . '/../src/save_uploaded_file.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json');
+
     try {
         if (!isset($_FILES['file'])) {
             throw new RuntimeException('No file uploaded.');
         }
 
-        $data_dir = realpath(__DIR__ . '/../data');
+        $data_dir = realpath(__DIR__ . '/data');
         $saved_file_name = save_uploaded_file($_FILES['file'], $data_dir, $_FILES['file']['name']);
 
         echo json_encode([

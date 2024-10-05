@@ -10,7 +10,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new RuntimeException('No file uploaded.');
         }
 
-        $data_dir = realpath(__DIR__ . '/data');
+        $data_dir = realpath(__DIR__ . '/../../data');
         $saved_file_name = save_uploaded_file($_FILES['file'], $data_dir, $_FILES['file']['name']);
 
         echo json_encode([

@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . '/../src/get_directory_structure.php';
+require __DIR__ . '/../../src/get_directory_structure.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     header('Content-Type: application/json');

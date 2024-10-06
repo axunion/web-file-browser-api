@@ -1,6 +1,6 @@
 <?php
 
-const MAX_FILESIZE = 5 * 1024 * 1024 * 1024;
+const MAX_FILESIZE = 16 * 1024 * 1024 * 1024;
 
 function save_uploaded_file(array $uploaded_file, string $destination_path, string $filename): string
 {
@@ -14,6 +14,7 @@ function save_uploaded_file(array $uploaded_file, string $destination_path, stri
         case UPLOAD_ERR_NO_FILE:
             throw new RuntimeException('No file sent.');
         case UPLOAD_ERR_INI_SIZE:
+            throw new RuntimeException('Exceeded filesize limit.');
         case UPLOAD_ERR_FORM_SIZE:
             throw new RuntimeException('Exceeded filesize limit.');
         default:

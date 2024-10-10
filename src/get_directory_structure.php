@@ -1,12 +1,12 @@
 <?php
 
-function get_directory_structure($path): array
+function get_directory_structure(string $path): array
 {
     if (!is_dir($path)) {
         throw new Exception("Directory not found: $path");
     }
 
-    $items = @scandir($path);
+    $items = scandir($path);
 
     if ($items === false) {
         throw new Exception("Unable to scan directory: $path");
@@ -25,17 +25,12 @@ function get_directory_structure($path): array
             $result[] = [
                 'type' => 'directory',
                 'name' => $item,
-                'contents' => get_directory_structure($full_path)
             ];
         } elseif (is_file($full_path)) {
             $result[] = [
                 'type' => 'file',
                 'name' => $item,
-            ];
-        } elseif (is_link($full_path)) {
-            $result[] = [
-                'type' => 'link',
-                'name' => $item,
+                'size' => filesize($full_path),
             ];
         }
     }

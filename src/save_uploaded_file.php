@@ -2,20 +2,26 @@
 
 function save_uploaded_file(array $uploaded_file, string $destination_path, string $filename): string
 {
-    $filename = preg_replace("/[^a-zA-Z0-9_.-]/", "", $filename);
+    $filename = basename(preg_replace("/[^a-zA-Z0-9_.-]/", "", $filename));
 
     if (strlen($filename) === 0) {
         throw new RuntimeException('Invalid filename.');
     }
 
     $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    $destination_path = rtrim($destination_path, '/') . '/';
+
+    $destination_path = rtrim($destination_path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+
+    if (!is_dir($destination_path) || !is_writable($destination_path)) {
+        throw new RuntimeException('Destination path is not writable.');
+    }
+
     $full_path = $destination_path . $filename;
     $counter = 1;
 
     while (file_exists($full_path)) {
-        $newFilename = pathinfo($filename, PATHINFO_FILENAME) . "_{$counter}." . $file_extension;
-        $full_path = $destination_path . $newFilename;
+        $new_filename = pathinfo($filename, PATHINFO_FILENAME) . "_{$counter}." . $file_extension;
+        $full_path = $destination_path . $new_filename;
         $counter++;
     }
 

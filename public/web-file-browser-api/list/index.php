@@ -12,11 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $target_path = realpath($data_dir . DIRECTORY_SEPARATOR . $sub_path);
 
         if ($target_path === false || strpos($target_path, $data_dir) !== 0) {
-            throw new Exception("Invalid or restricted path.");
+            throw new Exception('Invalid or restricted path.');
         }
 
         if (!is_dir($target_path) || !is_readable($target_path)) {
-            throw new Exception("Directory does not exist or is not readable.");
+            throw new Exception('Directory does not exist or is not readable.');
         }
 
         $list = get_directory_structure($target_path);

@@ -1,5 +1,25 @@
 <?php
 
+class DirectoryItem
+{
+    public string $type;
+    public string $name;
+    public ?int $size;
+
+    public function __construct(string $type, string $name, ?int $size = null)
+    {
+        $this->type = $type;
+        $this->name = $name;
+        $this->size = $size;
+    }
+}
+
+/**
+ * Retrieve the specified directory structure
+ *
+ * @param string $path
+ * @return DirectoryItem[]
+ */
 function get_directory_structure(string $path): array
 {
     if (!is_dir($path)) {
@@ -22,16 +42,9 @@ function get_directory_structure(string $path): array
         $full_path = $path . DIRECTORY_SEPARATOR . $item;
 
         if (is_dir($full_path) && !is_link($full_path)) {
-            $result[] = [
-                'type' => 'directory',
-                'name' => $item,
-            ];
+            $result[] = new DirectoryItem('directory', $item);
         } elseif (is_file($full_path)) {
-            $result[] = [
-                'type' => 'file',
-                'name' => $item,
-                'size' => filesize($full_path),
-            ];
+            $result[] = new DirectoryItem('file', $item, filesize($full_path));
         }
     }
 

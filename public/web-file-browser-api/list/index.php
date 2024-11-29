@@ -49,6 +49,6 @@ try {
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
-        'message' => 'An error occurred while fetching the directory structure.'
+        'message' => $e->getMessage(),
     ]);
 }

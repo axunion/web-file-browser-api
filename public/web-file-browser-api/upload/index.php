@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../../src/save_uploaded_file.php';
+require_once __DIR__ . '/../../../src/save_uploaded_file.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');

@@ -1,7 +1,14 @@
 <?php
 
+enum ItemType: string
+{
+    case FILE = 'file';
+    case DIRECTORY = 'directory';
+}
+
 class DirectoryItem
 {
+    public ItemType $type;
     public string $name;
     public ?int $size;
 
@@ -10,9 +17,11 @@ class DirectoryItem
      *
      * @param string $name File or directory name
      * @param int|null $size File size in bytes (null for directories)
+     * @param ItemType $type Type of the item (file or directory)
      */
-    public function __construct(string $name, ?int $size = null)
+    public function __construct(ItemType $type, string $name, ?int $size)
     {
+        $this->type = $type;
         $this->name = $name;
         $this->size = $size;
     }
@@ -47,9 +56,9 @@ function get_directory_structure(string $path): array
         $full_path = $path . DIRECTORY_SEPARATOR . $item;
 
         if (is_dir($full_path) && !is_link($full_path)) {
-            $result[] = new DirectoryItem($item, null);
+            $result[] = new DirectoryItem(ItemType::DIRECTORY, $item, null);
         } elseif (is_file($full_path)) {
-            $result[] = new DirectoryItem($item, filesize($full_path));
+            $result[] = new DirectoryItem(ItemType::FILE, $item, filesize($full_path));
         }
     }
 

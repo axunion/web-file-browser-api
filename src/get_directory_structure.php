@@ -62,5 +62,15 @@ function get_directory_structure(string $path): array
         }
     }
 
+    usort($result, function (DirectoryItem $a, DirectoryItem $b) {
+        if ($a->type === ItemType::DIRECTORY && $b->type === ItemType::FILE) {
+            return -1;
+        } elseif ($a->type === ItemType::FILE && $b->type === ItemType::DIRECTORY) {
+            return 1;
+        }
+
+        return strcmp($a->name, $b->name);
+    });
+
     return $result;
 }

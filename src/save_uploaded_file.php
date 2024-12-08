@@ -11,15 +11,21 @@
  */
 function save_uploaded_file(array $uploadedFile, string $destinationPath, string $safeFilename): string
 {
+    if (!isset($uploadedFile['tmp_name']) || !is_uploaded_file($uploadedFile['tmp_name'])) {
+        throw new RuntimeException('Invalid uploaded file.');
+    }
+
     $fileExtension = strtolower(pathinfo($safeFilename, PATHINFO_EXTENSION));
 
     validate_file_extension($fileExtension);
     validate_destination_directory($destinationPath);
 
+    $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $safeFilename);
     $finalFilePath = construct_unique_file_path($destinationPath, $safeFilename, $fileExtension);
 
     if (!move_uploaded_file($uploadedFile['tmp_name'], $finalFilePath)) {
-        throw new RuntimeException('Failed to move uploaded file.');
+        $error = error_get_last();
+        throw new RuntimeException("Failed to move uploaded file. Error: " . ($error['message'] ?? 'Unknown error.'));
     }
 
     return basename($finalFilePath);
@@ -93,7 +99,7 @@ function construct_unique_file_path(string $directory, string $filename, string 
 
     while (file_exists($filePath)) {
         $filenameWithoutExtension = pathinfo($filename, PATHINFO_FILENAME);
-        $uniqueSuffix = uniqid();
+        $uniqueSuffix = time() . '_' . bin2hex(random_bytes(5));
         $filePath = $normalizedDirectory . "{$filenameWithoutExtension}_{$uniqueSuffix}.{$extension}";
     }
 

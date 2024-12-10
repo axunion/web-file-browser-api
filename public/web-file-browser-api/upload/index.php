@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../../../src/save_uploaded_file.php';
 
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
     http_response_code(405);
@@ -11,8 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     ]);
     exit;
 }
-
-header('Content-Type: application/json');
 
 try {
     if (!isset($_FILES['file'])) {
@@ -41,7 +41,6 @@ try {
 
     echo json_encode([
         'status' => 'success',
-        'message' => 'File uploaded successfully.',
         'filename' => $savedFileName,
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {

@@ -2,6 +2,8 @@
 
 require_once __DIR__ . '/../../../src/get_directory_structure.php';
 
+header('Content-Type: application/json');
+
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     header('Allow: GET');
     http_response_code(405);
@@ -11,8 +13,6 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     ]);
     exit;
 }
-
-header('Content-Type: application/json');
 
 try {
     $data_dir = realpath(__DIR__ . '/../../data');
@@ -42,13 +42,13 @@ try {
 } catch (JsonException $e) {
     http_response_code(500);
     echo json_encode([
-        'status' => 'error',
+        'status' => 'failure',
         'message' => 'Failed to encode JSON response.'
     ]);
 } catch (Exception $e) {
     http_response_code(400);
     echo json_encode([
-        'status' => 'error',
+        'status' => 'failure',
         'message' => $e->getMessage(),
     ]);
 }

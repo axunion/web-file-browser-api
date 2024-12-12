@@ -9,8 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Method not allowed.'
-    ]);
+        'message' => 'Method not allowed.',
+    ], JSON_THROW_ON_ERROR);
     exit;
 }
 
@@ -19,40 +19,58 @@ try {
         throw new RuntimeException('No file uploaded.');
     }
 
-    if ($_FILES['file']['error'] !== UPLOAD_ERR_OK) {
-        throw new RuntimeException('Upload failed with error code: ' . $_FILES['file']['error']);
+    $upload_error = $_FILES['file']['error'];
+    if ($upload_error !== UPLOAD_ERR_OK) {
+        $error_messages = [
+            UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the MAX_FILE_SIZE directive that was specified in the HTML form.',
+            UPLOAD_ERR_PARTIAL => 'The uploaded file was only partially uploaded.',
+            UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder.',
+            UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+        ];
+
+        $error_message = $error_messages[$upload_error] ?? 'Unknown upload error.';
+        throw new RuntimeException($error_message);
     }
 
-    $maxFileSize = 5 * 1024 * 1024 * 1024;
+    $max_file_size = 5 * 1024 * 1024 * 1024; // 5GB
 
-    if ($_FILES['file']['size'] > $maxFileSize) {
-        throw new RuntimeException('Exceeded file size limit of 5GB.');
+    if ($_FILES['file']['size'] > $max_file_size) {
+        throw new RuntimeException('The uploaded file exceeds the size limit of 5GB.');
     }
 
-    $dataDir = realpath(__DIR__ . '/../../data');
+    $data_dir = realpath(__DIR__ . '/../../data');
 
-    if ($dataDir === false || !is_dir($dataDir) || !is_writable($dataDir)) {
-        throw new RuntimeException('Upload directory is not writable or does not exist.');
+    if ($data_dir === false || !is_dir($data_dir) || !is_writable($data_dir)) {
+        throw new RuntimeException('The upload directory is not writable or does not exist.');
     }
 
-    $uploadedFilename = $_FILES['file']['name'];
-    $sanitizedFilename = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', basename($uploadedFilename));
-    $savedFileName = save_uploaded_file($_FILES['file'], $dataDir, $sanitizedFilename);
+    $uploaded_filename = $_FILES['file']['name'];
+    $sanitized_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', basename($uploaded_filename));
 
+    if (strlen($sanitized_filename) === 0) {
+        $sanitized_filename = 'default_' . time();
+    }
+
+    $saved_file_name = save_uploaded_file($_FILES['file'], $data_dir, $sanitized_filename);
+
+    http_response_code(200);
     echo json_encode([
         'status' => 'success',
-        'filename' => $savedFileName,
+        'filename' => $saved_file_name,
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {
     http_response_code(500);
     echo json_encode([
         'status' => 'error',
-        'message' => 'Failed to encode JSON response.'
+        'message' => 'Failed to encode JSON response.',
     ]);
 } catch (RuntimeException $e) {
     http_response_code(400);
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage(),
-    ]);
+    ], JSON_THROW_ON_ERROR);
 }

@@ -1,34 +1,37 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * Save a sanitized uploaded file to the specified destination.
  *
- * @param array $uploadedFile Validated uploaded file array (from $_FILES).
- * @param string $destinationPath The directory where the file will be saved.
- * @param string $safeFilename A sanitized filename for the uploaded file.
+ * @param array $uploaded_file Validated uploaded file array (from $_FILES).
+ * @param string $destination_path The directory where the file will be saved.
+ * @param string $desired_filename A suggested filename for the uploaded file.
  * @return string The saved filename.
  * @throws RuntimeException If the file cannot be saved.
  */
-function save_uploaded_file(array $uploadedFile, string $destinationPath, string $safeFilename): string
+function save_uploaded_file(array $uploaded_file, string $destination_path, string $desired_filename): string
 {
-    if (!isset($uploadedFile['tmp_name']) || !is_uploaded_file($uploadedFile['tmp_name'])) {
+    if (!isset($uploaded_file['tmp_name']) || !is_uploaded_file($uploaded_file['tmp_name'])) {
         throw new RuntimeException('Invalid uploaded file.');
     }
 
-    $fileExtension = strtolower(pathinfo($safeFilename, PATHINFO_EXTENSION));
+    $file_extension = strtolower(pathinfo($desired_filename, PATHINFO_EXTENSION));
+    validate_file_extension($file_extension);
+    validate_destination_directory($destination_path);
 
-    validate_file_extension($fileExtension);
-    validate_destination_directory($destinationPath);
+    $safe_filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($desired_filename, PATHINFO_FILENAME));
+    $final_file_path = construct_unique_file_path($destination_path, $safe_filename, $file_extension);
 
-    $safeFilename = preg_replace('/[^a-zA-Z0-9._-]/', '_', $safeFilename);
-    $finalFilePath = construct_unique_file_path($destinationPath, $safeFilename, $fileExtension);
-
-    if (!move_uploaded_file($uploadedFile['tmp_name'], $finalFilePath)) {
+    if (!move_uploaded_file($uploaded_file['tmp_name'], $final_file_path)) {
         $error = error_get_last();
-        throw new RuntimeException("Failed to move uploaded file. Error: " . ($error['message'] ?? 'Unknown error.'));
+        throw new RuntimeException(
+            "Failed to move uploaded file to '{$final_file_path}'. Error: " . ($error['message'] ?? 'Unknown error.')
+        );
     }
 
-    return basename($finalFilePath);
+    return basename($final_file_path);
 }
 
 /**
@@ -40,7 +43,7 @@ function save_uploaded_file(array $uploadedFile, string $destinationPath, string
  */
 function validate_file_extension(string $extension): void
 {
-    $allowedExtensions = [
+    $allowed_extensions = [
         'jpg',
         'jpeg',
         'png',
@@ -63,7 +66,7 @@ function validate_file_extension(string $extension): void
         'csv'
     ];
 
-    if (!in_array($extension, $allowedExtensions, true)) {
+    if (!in_array($extension, $allowed_extensions, true)) {
         throw new RuntimeException("File type '{$extension}' is not allowed.");
     }
 }
@@ -77,9 +80,9 @@ function validate_file_extension(string $extension): void
  */
 function validate_destination_directory(string $path): void
 {
-    $normalizedPath = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $normalized_path = rtrim($path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
-    if (!is_dir($normalizedPath) || !is_writable($normalizedPath)) {
+    if (!is_dir($normalized_path) || !is_writable($normalized_path)) {
         throw new RuntimeException("Destination path '{$path}' is not writable or does not exist.");
     }
 }
@@ -88,20 +91,14 @@ function validate_destination_directory(string $path): void
  * Construct a unique file path in the destination directory.
  *
  * @param string $directory The destination directory.
- * @param string $filename The desired filename.
+ * @param string $filename The desired filename without extension.
  * @param string $extension The file extension.
  * @return string The unique file path.
  */
 function construct_unique_file_path(string $directory, string $filename, string $extension): string
 {
-    $normalizedDirectory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $filePath = $normalizedDirectory . $filename;
+    $normalized_directory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $unique_name = hash('sha256', $filename . microtime(true));
 
-    while (file_exists($filePath)) {
-        $filenameWithoutExtension = pathinfo($filename, PATHINFO_FILENAME);
-        $uniqueSuffix = time() . '_' . bin2hex(random_bytes(5));
-        $filePath = $normalizedDirectory . "{$filenameWithoutExtension}_{$uniqueSuffix}.{$extension}";
-    }
-
-    return $filePath;
+    return "{$normalized_directory}{$filename}_{$unique_name}.{$extension}";
 }

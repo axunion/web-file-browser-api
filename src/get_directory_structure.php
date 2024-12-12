@@ -6,6 +6,8 @@ enum ItemType: string
     case DIRECTORY = 'directory';
 }
 
+class DirectoryException extends Exception {}
+
 class DirectoryItem
 {
     public ItemType $type;
@@ -15,12 +17,21 @@ class DirectoryItem
     /**
      * Constructor for DirectoryItem
      *
+     * @param ItemType $type Type of the item (file or directory)
      * @param string $name File or directory name
      * @param int|null $size File size in bytes (null for directories)
-     * @param ItemType $type Type of the item (file or directory)
+     * @throws InvalidArgumentException If invalid size is provided for the item type
      */
-    public function __construct(ItemType $type, string $name, ?int $size)
+    public function __construct(ItemType $type, string $name, ?int $size = null)
     {
+        if ($type === ItemType::FILE && $size === null) {
+            throw new InvalidArgumentException("File size must be specified for files.");
+        }
+
+        if ($type === ItemType::DIRECTORY && $size !== null) {
+            throw new InvalidArgumentException("Size for directories must be null.");
+        }
+
         $this->type = $type;
         $this->name = $name;
         $this->size = $size;
@@ -32,18 +43,18 @@ class DirectoryItem
  *
  * @param string $path Path of the directory to scan
  * @return DirectoryItem[] Array of directory or file items
- * @throws Exception If the directory is invalid or cannot be scanned
+ * @throws DirectoryException If the directory is invalid or cannot be scanned
  */
 function get_directory_structure(string $path): array
 {
     if (!is_dir($path)) {
-        throw new Exception("Directory not found: $path");
+        throw new DirectoryException("Directory not found: $path");
     }
 
     $items = scandir($path);
 
     if ($items === false) {
-        throw new Exception("Unable to scan directory: $path");
+        throw new DirectoryException("Unable to scan directory: $path");
     }
 
     $result = [];
@@ -62,15 +73,11 @@ function get_directory_structure(string $path): array
         }
     }
 
-    usort($result, function (DirectoryItem $a, DirectoryItem $b) {
-        if ($a->type === ItemType::DIRECTORY && $b->type === ItemType::FILE) {
-            return -1;
-        } elseif ($a->type === ItemType::FILE && $b->type === ItemType::DIRECTORY) {
-            return 1;
-        }
-
-        return strcmp($a->name, $b->name);
-    });
+    usort(
+        $result,
+        fn(DirectoryItem $a, DirectoryItem $b) =>
+        $a->type === $b->type ? strcmp($a->name, $b->name) : ($a->type === ItemType::DIRECTORY ? -1 : 1)
+    );
 
     return $result;
 }

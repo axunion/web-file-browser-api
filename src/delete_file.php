@@ -3,41 +3,44 @@
 declare(strict_types=1);
 
 /**
- * Delete a file at the specified path.
+ * Delete a file in the specified directory.
  *
- * @param string $filePath The full path to the file to delete.
+ * @param string $directory The directory where the file is located.
+ * @param string $file_name The name of the file to delete.
  * @return void
  * @throws RuntimeException If the file cannot be deleted.
  */
-function deleteFile(string $filePath): void
+function delete_file(string $directory, string $file_name): void
 {
-    validateFilePath($filePath);
+    $normalized_directory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $file_path = $normalized_directory . $file_name;
+    validate_file_path($file_path);
 
-    if (!unlink($filePath)) {
+    if (!unlink($file_path)) {
         $error = error_get_last();
         $message = $error['message'] ?? 'An unknown error occurred.';
-        throw new RuntimeException("Failed to delete file '{$filePath}'. Error: {$message}");
+        throw new RuntimeException("Failed to delete file '{$file_path}'. Error: {$message}");
     }
 }
 
 /**
  * Validate that the file exists and is deletable.
  *
- * @param string $filePath The file path to validate.
+ * @param string $file_path The full file path to validate.
  * @return void
  * @throws RuntimeException If the file does not exist or is not deletable.
  */
-function validateFilePath(string $filePath): void
+function validate_file_path(string $file_path): void
 {
-    if (!file_exists($filePath)) {
-        throw new RuntimeException("File '{$filePath}' does not exist.");
+    if (!file_exists($file_path)) {
+        throw new RuntimeException("File '{$file_path}' does not exist.");
     }
 
-    if (!is_file($filePath)) {
-        throw new RuntimeException("The path '{$filePath}' is not a file.");
+    if (!is_file($file_path)) {
+        throw new RuntimeException("The path '{$file_path}' is not a file.");
     }
 
-    if (!is_writable($filePath)) {
-        throw new RuntimeException("File '{$filePath}' is not writable.");
+    if (!is_writable($file_path)) {
+        throw new RuntimeException("File '{$file_path}' is not writable.");
     }
 }

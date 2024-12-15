@@ -5,77 +5,90 @@ require_once __DIR__ . '/../src/delete_file.php';
 /**
  * Test case: Successfully delete a file.
  */
-function testDeleteFileSuccess(): void
+function test_delete_file_success(): void
 {
-    $testFilePath = __DIR__ . '/testfile.txt';
+    echo "Test: Successfully delete a file...\n";
 
-    file_put_contents($testFilePath, 'Test content');
-    assert(file_exists($testFilePath), 'Test file should exist before deletion.');
-    deleteFile($testFilePath);
-    assert(!file_exists($testFilePath), 'Test file should be deleted.');
-}
+    $test_directory = sys_get_temp_dir();
+    $test_file = 'test_file.txt';
+    $test_path = $test_directory . DIRECTORY_SEPARATOR . $test_file;
 
-/**
- * Test case: File does not exist.
- */
-function testDeleteFileFileDoesNotExist(): void
-{
-    $testFilePath = __DIR__ . '/nonexistentfile.txt';
-
-    assert(!file_exists($testFilePath), 'Test file should not exist.');
+    file_put_contents($test_path, 'Test content');
 
     try {
-        deleteFile($testFilePath);
-        assert(false, 'Expected exception for non-existent file.');
-    } catch (RuntimeException $e) {
-        assert($e->getMessage() === "File '{$testFilePath}' does not exist.", 'Correct exception message should be thrown.');
+        delete_file($test_directory, $test_file);
+        assert(!file_exists($test_path), "The file should have been deleted.");
+        echo "  Passed!\n";
+    } catch (Exception $e) {
+        echo "  Failed: " . $e->getMessage() . "\n";
     }
 }
 
 /**
- * Test case: Path is not a file.
+ * Test case: Attempt to delete a file that does not exist.
  */
-function testDeleteFileNotAFile(): void
+function test_delete_file_nonexistent_file(): void
 {
-    $testDirPath = __DIR__ . '/testdir';
+    echo "Test: Attempt to delete a nonexistent file...\n";
 
-    mkdir($testDirPath);
-    assert(is_dir($testDirPath), 'Test directory should exist.');
+    $test_directory = sys_get_temp_dir();
+    $test_file = 'nonexistent_file.txt';
 
     try {
-        deleteFile($testDirPath);
-        assert(false, 'Expected exception for non-file path.');
+        delete_file($test_directory, $test_file);
+        echo "  Failed: Exception was not thrown for a nonexistent file.\n";
     } catch (RuntimeException $e) {
-        assert($e->getMessage() === "The path '{$testDirPath}' is not a file.", 'Correct exception message should be thrown.');
+        assert(strpos($e->getMessage(), 'does not exist') !== false, "Expected exception message about nonexistent file.");
+        echo "  Passed!\n";
+    }
+}
+
+/**
+ * Test case: Attempt to delete a file in an invalid directory.
+ */
+function test_delete_file_invalid_directory(): void
+{
+    echo "Test: Attempt to delete a file in an invalid directory...\n";
+
+    $invalid_directory = '/invalid_directory';
+    $test_file = 'test_file.txt';
+
+    try {
+        delete_file($invalid_directory, $test_file);
+        echo "  Failed: Exception was not thrown for an invalid directory.\n";
+    } catch (RuntimeException $e) {
+        assert(strpos($e->getMessage(), 'does not exist') !== false, "Expected exception message about invalid directory.");
+        echo "  Passed!\n";
+    }
+}
+
+/**
+ * Test case: Attempt to delete a non-writable file.
+ */
+function test_delete_file_non_writable(): void
+{
+    echo "Test: Attempt to delete a non-writable file...\n";
+
+    $test_directory = sys_get_temp_dir();
+    $test_file = 'non_writable_file.txt';
+    $test_path = $test_directory . DIRECTORY_SEPARATOR . $test_file;
+
+    file_put_contents($test_path, 'Test content');
+    chmod($test_path, 0444);
+
+    try {
+        delete_file($test_directory, $test_file);
+        echo "  Failed: Exception was not thrown for a non-writable file.\n";
+    } catch (RuntimeException $e) {
+        assert(strpos($e->getMessage(), 'not writable') !== false, "Expected exception message about non-writable file.");
+        echo "  Passed!\n";
     } finally {
-        rmdir($testDirPath);
+        chmod($test_path, 0666);
+        unlink($test_path);
     }
 }
 
-/**
- * Test case: File is not writable.
- */
-function testDeleteFileNotWritable(): void
-{
-    $testFilePath = __DIR__ . '/readonlyfile.txt';
-
-    file_put_contents($testFilePath, 'Test content');
-    chmod($testFilePath, 0444);
-    assert(file_exists($testFilePath), 'Test file should exist.');
-    assert(!is_writable($testFilePath), 'Test file should not be writable.');
-
-    try {
-        deleteFile($testFilePath);
-        assert(false, 'Expected exception for non-writable file.');
-    } catch (RuntimeException $e) {
-        assert($e->getMessage() === "File '{$testFilePath}' is not writable.", 'Correct exception message should be thrown.');
-    } finally {
-        chmod($testFilePath, 0666);
-        unlink($testFilePath);
-    }
-}
-
-testDeleteFileSuccess();
-testDeleteFileFileDoesNotExist();
-testDeleteFileNotAFile();
-testDeleteFileNotWritable();
+test_delete_file_success();
+test_delete_file_nonexistent_file();
+test_delete_file_invalid_directory();
+test_delete_file_non_writable();

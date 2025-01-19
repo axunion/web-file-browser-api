@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../src/save_uploaded_file.php';
+require_once __DIR__ . '/../../../src/validate_and_resolve_path.php';
 
 header('Content-Type: application/json');
 
@@ -15,11 +16,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 try {
+    $data_dir = realpath(__DIR__ . '/../../data');
+    $sub_path = filter_input(INPUT_POST, 'path') ?? '';
+    $target_path = validate_and_resolve_path($data_dir, $sub_path);
+
     if (!isset($_FILES['file'])) {
         throw new RuntimeException('No file uploaded.');
     }
 
     $upload_error = $_FILES['file']['error'];
+
     if ($upload_error !== UPLOAD_ERR_OK) {
         $error_messages = [
             UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the upload_max_filesize directive in php.ini.',
@@ -41,12 +47,6 @@ try {
         throw new RuntimeException('The uploaded file exceeds the size limit of 5GB.');
     }
 
-    $data_dir = realpath(__DIR__ . '/../../data');
-
-    if ($data_dir === false || !is_dir($data_dir) || !is_writable($data_dir)) {
-        throw new RuntimeException('The upload directory is not writable or does not exist.');
-    }
-
     $uploaded_filename = $_FILES['file']['name'];
     $sanitized_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', basename($uploaded_filename));
 
@@ -59,6 +59,7 @@ try {
     http_response_code(200);
     echo json_encode([
         'status' => 'success',
+        'path' => $sub_path,
         'filename' => $saved_file_name,
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {

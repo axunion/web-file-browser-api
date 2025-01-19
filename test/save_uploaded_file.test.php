@@ -3,29 +3,6 @@
 require_once __DIR__ . '/../src/save_uploaded_file.php';
 
 /**
- * Test validate_file_extension function.
- */
-function test_validate_file_extension()
-{
-    echo "Running test_validate_file_extension...\n";
-
-    try {
-        validate_file_extension('jpg');
-        validate_file_extension('png');
-        echo "  Passed: Allowed extensions.\n";
-    } catch (RuntimeException $e) {
-        echo "  Failed: " . $e->getMessage() . "\n";
-    }
-
-    try {
-        validate_file_extension('exe');
-        echo "  Failed: Disallowed extension should throw exception.\n";
-    } catch (RuntimeException $e) {
-        echo "  Passed: " . $e->getMessage() . "\n";
-    }
-}
-
-/**
  * Test validate_destination_directory function.
  */
 function test_validate_destination_directory()
@@ -88,6 +65,5 @@ function test_construct_unique_file_path()
     unlink($existingFile);
 }
 
-test_validate_file_extension();
 test_validate_destination_directory();
 test_construct_unique_file_path();

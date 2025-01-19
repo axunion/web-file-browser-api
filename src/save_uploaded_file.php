@@ -18,7 +18,6 @@ function save_uploaded_file(array $uploaded_file, string $destination_path, stri
     }
 
     $file_extension = strtolower(pathinfo($desired_filename, PATHINFO_EXTENSION));
-    validate_file_extension($file_extension);
     validate_destination_directory($destination_path);
 
     $safe_filename = preg_replace('/[^a-zA-Z0-9._-]/', '_', pathinfo($desired_filename, PATHINFO_FILENAME));
@@ -32,43 +31,6 @@ function save_uploaded_file(array $uploaded_file, string $destination_path, stri
     }
 
     return basename($final_file_path);
-}
-
-/**
- * Validate the file extension against an allowed list.
- *
- * @param string $extension The file extension to validate.
- * @return void
- * @throws RuntimeException If the extension is not allowed.
- */
-function validate_file_extension(string $extension): void
-{
-    $allowed_extensions = [
-        'jpg',
-        'jpeg',
-        'png',
-        'gif',
-        'webp',
-        'heic',
-        'mp4',
-        'mov',
-        'avi',
-        'mkv',
-        'mp3',
-        'wav',
-        'aac',
-        'm4a',
-        'pdf',
-        'txt',
-        'doc',
-        'docx',
-        'xlsx',
-        'csv'
-    ];
-
-    if (!in_array($extension, $allowed_extensions, true)) {
-        throw new RuntimeException("File type '{$extension}' is not allowed.");
-    }
 }
 
 /**

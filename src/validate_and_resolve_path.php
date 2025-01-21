@@ -25,9 +25,5 @@ function validate_and_resolve_path(string $base_dir, string $path): string
         throw new RuntimeException('The specified path does not exist.');
     }
 
-    if (!is_writable($resolved_path)) {
-        throw new RuntimeException('The specified path is not writable.');
-    }
-
     return $resolved_path;
 }

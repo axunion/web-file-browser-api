@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../src/get_directory_structure.php';
+require_once __DIR__ . '/../../../src/validate_and_resolve_path.php';
 
 header('Content-Type: application/json');
 
@@ -16,26 +17,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 
 try {
     $data_dir = realpath(__DIR__ . '/../../data');
-
-    if ($data_dir === false || !is_dir($data_dir)) {
-        throw new RuntimeException('Base data directory does not exist or is not a directory.');
-    }
-
     $sub_path = filter_input(INPUT_GET, 'path') ?? '';
-    $sub_path = trim($sub_path);
+    $target_path = validate_and_resolve_path($data_dir, $sub_path);
 
-    if (preg_match('/\.\.|\x00/', $sub_path)) {
-        throw new RuntimeException('Invalid path.');
-    }
-
-    $target_path = realpath($data_dir . DIRECTORY_SEPARATOR . $sub_path);
-
-    if ($target_path === false || strpos($target_path, $data_dir) !== 0) {
-        throw new RuntimeException('Invalid or restricted path.');
-    }
-
-    if (!is_dir($target_path) || !is_readable($target_path)) {
-        throw new RuntimeException('Directory does not exist or is not readable.');
+    if (!is_readable($target_path)) {
+        throw new RuntimeException('The specified path is not readable.');
     }
 
     $list = get_directory_structure($target_path);

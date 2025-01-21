@@ -20,6 +20,10 @@ try {
     $sub_path = filter_input(INPUT_POST, 'path') ?? '';
     $target_path = validate_and_resolve_path($data_dir, $sub_path);
 
+    if (!is_writable($resolved_path)) {
+        throw new RuntimeException('The specified path is not writable.');
+    }
+
     if (!isset($_FILES['file'])) {
         throw new RuntimeException('No file uploaded.');
     }

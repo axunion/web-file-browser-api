@@ -6,10 +6,13 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: Enable dry run mode (true or false)
+        description: 'Enable dry run mode'
         required: true
-        default: true
-
+        default: 'true'
+        type: choice
+        options:
+          - true
+          - false
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
       - name: Upload Directory
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          log-level:
+          log-level: standard
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}

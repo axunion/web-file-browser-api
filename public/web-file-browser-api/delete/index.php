@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../../../src/delete_file.php';
+require_once __DIR__ . '/../../../src/web-file-browser-api/delete_file.php';
 
 header('Content-Type: application/json');
 

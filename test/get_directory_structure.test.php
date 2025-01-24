@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../src/get_directory_structure.php';
+require_once __DIR__ . '/../src/web-file-browser-api/get_directory_structure.php';
 
 /**
  * Helper function to assert a condition

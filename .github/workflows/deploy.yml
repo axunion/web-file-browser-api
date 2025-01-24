@@ -4,6 +4,10 @@ on:
     # branches:
     #   - main
   workflow_dispatch:
+    dry_run:
+      description: 'Enable dry run mode (true or false)'
+      required: true
+      default: 'true'
 
 jobs:
   deploy:
@@ -11,8 +15,8 @@ jobs:
     strategy:
       matrix:
         directory:
-          - { local: ./src, server: ${{ vars.SRC_DIR }} }
-          - { local: ./public, server: ${{ vars.PUBLIC_DIR }} }
+          - { local: ./src/web-file-browser-api, server: ${{ vars.SRC_DIR }} }
+          - { local: ./public/web-file-browser-api, server: ${{ vars.PUBLIC_DIR }} }
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

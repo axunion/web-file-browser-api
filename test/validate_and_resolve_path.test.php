@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../src/validate_and_resolve_path.php';
+require_once __DIR__ . '/../src/web-file-browser-api/validate_and_resolve_path.php';
 
 /**
  * Run tests for validate_and_resolve_path

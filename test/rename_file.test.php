@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../src/rename_file.php';
+require_once __DIR__ . '/../src/web-file-browser-api/rename_file.php';
 
 /**
  * Helper function to create a temporary directory for testing.

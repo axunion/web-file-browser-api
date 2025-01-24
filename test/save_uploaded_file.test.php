@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/../src/save_uploaded_file.php';
+require_once __DIR__ . '/../src/web-file-browser-api/save_uploaded_file.php';
 
 /**
  * Test validate_destination_directory function.

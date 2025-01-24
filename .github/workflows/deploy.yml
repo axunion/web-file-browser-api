@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       dry-run:
-        description: 'Enable dry run mode (true or false)'
+        description: Enable dry run mode (true or false)
         required: true
         default: true
 
@@ -16,8 +16,10 @@ jobs:
     strategy:
       matrix:
         directory:
-          - { local: ./src/web-file-browser-api, server: ${{ vars.SRC_DIR }} }
-          - { local: ./public/web-file-browser-api, server: ${{ vars.PUBLIC_DIR }} }
+          - local: ./src/web-file-browser-api
+            server: ${{ vars.SRC_DIR }}
+          - local: ./public/web-file-browser-api
+            server: ${{ vars.PUBLIC_DIR }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -25,6 +27,7 @@ jobs:
       - name: Upload Directory
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
+          log-level:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}

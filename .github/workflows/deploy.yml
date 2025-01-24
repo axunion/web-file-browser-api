@@ -19,9 +19,9 @@ jobs:
     strategy:
       matrix:
         directory:
-          - local: ./src/web-file-browser-api
+          - local: ./src/web-file-browser-api/
             server: ${{ vars.SRC_DIR }}
-          - local: ./public/web-file-browser-api
+          - local: ./public/web-file-browser-api/
             server: ${{ vars.PUBLIC_DIR }}
     steps:
       - name: Checkout code

@@ -1,13 +1,14 @@
 name: Deploy
 on:
-  push:
-    # branches:
-    #   - main
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
-    dry_run:
-      description: 'Enable dry run mode (true or false)'
-      required: true
-      default: 'true'
+    inputs:
+      dry-run:
+        description: 'Enable dry run mode (true or false)'
+        required: true
+        default: true
 
 jobs:
   deploy:
@@ -29,3 +30,4 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ${{ matrix.directory.local }}
           server-dir: ${{ matrix.directory.server }}
+          dry-run: ${{ inputs.dry-run || false }}

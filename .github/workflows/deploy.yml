@@ -1,8 +1,8 @@
 name: Deploy
 on:
-  # push:
-  #   branches:
-  #     - main
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       dry-run:
@@ -20,12 +20,12 @@ jobs:
       matrix:
         directory:
           - local: ./src/web-file-browser-api/
-            server: ${{ vars.SRC_DIR }}
+            server: ${{ secrets.SRC_DIR }}
           - local: ./public/web-file-browser-api/
-            server: ${{ vars.PUBLIC_DIR }}
+            server: ${{ secrets.PUBLIC_DIR }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Upload Directory
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

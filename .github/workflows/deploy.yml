@@ -16,13 +16,16 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      SRC_DIR: ${{ secrets.SRC_DIR }}
+      PUBLIC_DIR: ${{ secrets.PUBLIC_DIR }}
     strategy:
       matrix:
         directory:
           - local: ./src/web-file-browser-api/
-            server: ${{ secrets.SRC_DIR }}
+            server: ${{ env.SRC_DIR }}
           - local: ./public/web-file-browser-api/
-            server: ${{ secrets.PUBLIC_DIR }}
+            server: ${{ env.PUBLIC_DIR }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

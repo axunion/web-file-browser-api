@@ -20,7 +20,7 @@ try {
     $sub_path = filter_input(INPUT_POST, 'path') ?? '';
     $target_path = validate_and_resolve_path($data_dir, $sub_path);
 
-    if (!is_writable($resolved_path)) {
+    if (!is_writable($target_path)) {
         throw new RuntimeException('The specified path is not writable.');
     }
 

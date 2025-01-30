@@ -28,6 +28,10 @@ try {
         throw new RuntimeException('No file uploaded.');
     }
 
+    if (!isset($uploaded_file['tmp_name']) || !is_uploaded_file($uploaded_file['tmp_name'])) {
+        throw new RuntimeException('Invalid uploaded file.');
+    }
+
     $upload_error = $_FILES['file']['error'];
 
     if ($upload_error !== UPLOAD_ERR_OK) {
@@ -43,12 +47,6 @@ try {
 
         $error_message = $error_messages[$upload_error] ?? 'Unknown upload error.';
         throw new RuntimeException($error_message);
-    }
-
-    $max_file_size = 5 * 1024 * 1024 * 1024; // 5GB
-
-    if ($_FILES['file']['size'] > $max_file_size) {
-        throw new RuntimeException('The uploaded file exceeds the size limit of 5GB.');
     }
 
     $uploaded_filename = $_FILES['file']['name'];

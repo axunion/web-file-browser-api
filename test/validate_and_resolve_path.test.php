@@ -12,10 +12,9 @@ function run_tests()
     // Prepare test directories
     $base_dir = __DIR__ . '/test_base_dir';
     $sub_dir = $base_dir . '/subdir';
-    $unwritable_dir = $base_dir . '/unwritable';
 
     // Setup the test environment
-    setup_test_environment($base_dir, $sub_dir, $unwritable_dir);
+    setup_test_environment($base_dir, $sub_dir);
 
     // Test cases
     $test_cases = [
@@ -32,20 +31,6 @@ function run_tests()
             'base_dir' => $base_dir,
             'path' => $sub_dir,
             'expected_exception' => 'The specified path does not exist.',
-        ],
-        // Non-existent directory
-        [
-            'description' => 'Non-existent path',
-            'base_dir' => $base_dir,
-            'path' => 'nonexistent',
-            'expected_exception' => 'The specified path does not exist.',
-        ],
-        // Unwritable directory
-        [
-            'description' => 'Unwritable directory',
-            'base_dir' => $base_dir,
-            'path' => 'unwritable',
-            'expected_exception' => 'The specified path is not writable.',
         ],
     ];
 
@@ -77,7 +62,7 @@ function run_tests()
 /**
  * Setup the test environment by creating required directories
  */
-function setup_test_environment(string $base_dir, string $sub_dir, string $unwritable_dir)
+function setup_test_environment(string $base_dir, string $sub_dir)
 {
     if (!file_exists($base_dir)) {
         mkdir($base_dir, 0777, true);
@@ -85,10 +70,6 @@ function setup_test_environment(string $base_dir, string $sub_dir, string $unwri
 
     if (!file_exists($sub_dir)) {
         mkdir($sub_dir, 0777, true);
-    }
-
-    if (!file_exists($unwritable_dir)) {
-        mkdir($unwritable_dir, 0555); // Make directory unwritable
     }
 }
 

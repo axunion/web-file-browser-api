@@ -56,7 +56,7 @@ try {
         $sanitized_filename = 'default_' . time();
     }
 
-    $saved_file_name = save_uploaded_file($_FILES['file'], $data_dir, $sanitized_filename);
+    $saved_file_name = save_uploaded_file($_FILES['file'], $target_path, $sanitized_filename);
 
     http_response_code(200);
     echo json_encode([

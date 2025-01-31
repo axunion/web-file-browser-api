@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 enum ItemType: string
 {
     case FILE = 'file';

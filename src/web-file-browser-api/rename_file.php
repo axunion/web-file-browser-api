@@ -13,11 +13,11 @@ declare(strict_types=1);
  */
 function rename_file(string $directory, string $current_name, string $new_name): string
 {
+    validate_file_name($new_name);
+
     $normalized_directory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
     $current_file_path = $normalized_directory . $current_name;
     $new_file_path = $normalized_directory . $new_name;
-
-    validate_file_name($new_name);
 
     if (!file_exists($current_file_path)) {
         throw new RuntimeException("The file '{$current_name}' does not exist in the directory.");

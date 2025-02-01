@@ -16,14 +16,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     $data_dir = realpath(__DIR__ . '/../../data');
-
-    if ($data_dir === false || !is_dir($data_dir)) {
-        throw new RuntimeException('Base data directory does not exist.');
-    }
-
-    $sub_path = trim(filter_input(INPUT_POST, 'path') ?? '');
-    $current_name = trim(filter_input(INPUT_POST, 'currentName') ?? '');
-    $new_name = trim(filter_input(INPUT_POST, 'newName') ?? '');
+    $sub_path = filter_input(INPUT_POST, 'path') ?? '';
+    $current_name = filter_input(INPUT_POST, 'name') ?? '';
+    $new_name = filter_input(INPUT_POST, 'newName') ?? '';
 
     if (empty($current_name)) {
         throw new RuntimeException('Current file name is required.');
@@ -33,18 +28,10 @@ try {
         throw new RuntimeException('New file name is required.');
     }
 
-    if (preg_match('/[<>:"\/\\|?*]/', $new_name)) {
-        throw new RuntimeException('New file name contains invalid characters.');
-    }
+    $target_path = validate_and_resolve_path($data_dir, $sub_path);
 
-    $target_path = realpath($data_dir . DIRECTORY_SEPARATOR . $sub_path);
-
-    if ($target_path === false || strpos($target_path, $data_dir) !== 0) {
-        throw new RuntimeException('Invalid or restricted path.');
-    }
-
-    if (!is_dir($target_path) || !is_readable($target_path)) {
-        throw new RuntimeException('Target directory does not exist or is not readable.');
+    if (!is_writable($target_path)) {
+        throw new RuntimeException('The specified path is not writable.');
     }
 
     $renamed_file_name = rename_file($target_path, $current_name, $new_name);
@@ -52,6 +39,7 @@ try {
     http_response_code(200);
     echo json_encode([
         'status' => 'success',
+        'path' => $sub_path,
         'filename' => $renamed_file_name,
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {

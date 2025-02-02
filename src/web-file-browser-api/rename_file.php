@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/filepath_utils.php';
+
 /**
  * Rename a file in the specified directory.
  *
@@ -28,26 +30,4 @@ function rename_file(string $directory, string $current_name, string $new_name):
     }
 
     return $new_name;
-}
-
-/**
- * Validate a file name to ensure it does not contain invalid characters.
- *
- * @param string $file_name The file name to validate.
- * @return void
- * @throws RuntimeException If the file name contains invalid characters.
- */
-function validate_file_name(string $file_name): void
-{
-    if (preg_match('/[<>:"\/\\|?*]/', $file_name)) {
-        throw new RuntimeException("The file name '{$file_name}' contains invalid characters.");
-    }
-
-    if (strlen($file_name) === 0) {
-        throw new RuntimeException("The file name cannot be empty.");
-    }
-
-    if (strlen($file_name) > 255) {
-        throw new RuntimeException("The file name '{$file_name}' exceeds the maximum allowed length of 255 characters.");
-    }
 }

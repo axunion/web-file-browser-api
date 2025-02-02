@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/filepath_utils.php';
+
 /**
  * Save a sanitized uploaded file to the specified destination.
  *
@@ -13,9 +15,8 @@ declare(strict_types=1);
  */
 function save_uploaded_file(array $uploaded_file, string $destination_path, string $filename): string
 {
-    $file_basename = pathinfo($filename, PATHINFO_FILENAME);
-    $file_extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    $final_file_path = construct_sequential_file_path($destination_path, $file_basename, $file_extension);
+    validate_file_name($filename);
+    $final_file_path = construct_sequential_file_path($destination_path, $filename);
 
     if (!move_uploaded_file($uploaded_file['tmp_name'], $final_file_path)) {
         $error = error_get_last();
@@ -25,30 +26,4 @@ function save_uploaded_file(array $uploaded_file, string $destination_path, stri
     }
 
     return basename($final_file_path);
-}
-
-/**
- * Construct a unique file path in the destination directory using sequential numbering.
- *
- * @param string $directory The destination directory.
- * @param string $filename The desired filename without extension.
- * @param string $extension The file extension.
- * @return string The unique file path.
- */
-function construct_sequential_file_path(string $directory, string $filename, string $extension): string
-{
-    $normalized_directory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $base_path = "{$normalized_directory}{$filename}.{$extension}";
-
-    if (!file_exists($base_path)) {
-        return $base_path;
-    }
-
-    $counter = 1;
-
-    while (file_exists("{$normalized_directory}{$filename}_{$counter}.{$extension}")) {
-        $counter++;
-    }
-
-    return "{$normalized_directory}{$filename}_{$counter}.{$extension}";
 }

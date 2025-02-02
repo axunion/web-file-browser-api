@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/filepath_utils.php';
+
 /**
  * Moves the specified file to the trash directory.
  *
@@ -20,16 +22,9 @@ function move_to_trash(string $file_path, string $trash_dir): void
         throw new RuntimeException("Trash directory is not writable: {$trash_dir}");
     }
 
-    $file_name = basename($file_path);
-    $trash_path = rtrim($trash_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $file_name;
-
-    $counter = 1;
-
-    while (file_exists($trash_path)) {
-        $trash_path = rtrim($trash_dir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR .
-            pathinfo($file_name, PATHINFO_FILENAME) . "_{$counter}." . pathinfo($file_name, PATHINFO_EXTENSION);
-        $counter++;
-    }
+    $filename = basename($file_path);
+    validate_file_name($filename);
+    $trash_path = construct_sequential_file_path($trash_dir, $filename);
 
     if (!rename($file_path, $trash_path)) {
         throw new RuntimeException("Failed to move file to trash: {$file_path}");

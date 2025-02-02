@@ -1,7 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/save_uploaded_file.php';
-require_once __DIR__ . '/../../../src/web-file-browser-api/validate_and_resolve_path.php';
+require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 
 header('Content-Type: application/json');
 

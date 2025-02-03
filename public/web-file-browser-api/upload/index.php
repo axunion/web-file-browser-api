@@ -28,7 +28,7 @@ try {
         throw new RuntimeException('No file uploaded.');
     }
 
-    if (!isset($uploaded_file['tmp_name']) || !is_uploaded_file($uploaded_file['tmp_name'])) {
+    if (!isset($_FILES['file']['tmp_name']) || !is_uploaded_file($_FILES['file']['tmp_name'])) {
         throw new RuntimeException('Invalid uploaded file.');
     }
 
@@ -49,20 +49,21 @@ try {
         throw new RuntimeException($error_message);
     }
 
-    $uploaded_filename = $_FILES['file']['name'];
-    $sanitized_filename = preg_replace('/[^a-zA-Z0-9_\.-]/', '_', basename($uploaded_filename));
+    validate_file_name($_FILES['file']['name']);
 
-    if (strlen($sanitized_filename) === 0) {
-        $sanitized_filename = 'default_' . time();
+    $file_path = construct_sequential_file_path($target_path, $_FILES['file']['name']);
+
+    if (!move_uploaded_file($_FILES['file']['tmp_name'], $file_path)) {
+        $error = error_get_last();
+        throw new RuntimeException(
+            "Failed to move uploaded file. Destination: '{$file_path}', Error: " . ($error['message'] ?? 'Unknown error.')
+        );
     }
-
-    $saved_file_name = save_uploaded_file($_FILES['file'], $target_path, $sanitized_filename);
 
     http_response_code(200);
     echo json_encode([
         'status' => 'success',
         'path' => $sub_path,
-        'filename' => $saved_file_name,
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {
     http_response_code(500);

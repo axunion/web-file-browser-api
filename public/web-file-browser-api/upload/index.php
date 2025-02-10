@@ -1,6 +1,5 @@
 <?php
 
-require_once __DIR__ . '/../../../src/web-file-browser-api/save_uploaded_file.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 
 header('Content-Type: application/json');
@@ -59,14 +58,14 @@ try {
     if (!move_uploaded_file($uploaded_tmp_name, $file_path)) {
         $error = error_get_last();
         throw new RuntimeException(
-            "Failed to move uploaded file. Destination: '{$file_path}', Error: " . ($error['message'] ?? 'Unknown error.')
+            "Failed to move uploaded file. Error: " . ($error['message'] ?? 'Unknown error.')
         );
     }
 
     http_response_code(200);
     echo json_encode([
         'status' => 'success',
-        'path' => $sub_path,
+        'name' => basename($file_path),
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {
     http_response_code(500);
@@ -79,5 +78,11 @@ try {
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage(),
+    ], JSON_THROW_ON_ERROR);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'An unexpected error occurred.',
     ], JSON_THROW_ON_ERROR);
 }

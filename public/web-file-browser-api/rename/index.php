@@ -1,5 +1,6 @@
 <?php
 
+require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/rename_file.php';
 
 header('Content-Type: application/json');

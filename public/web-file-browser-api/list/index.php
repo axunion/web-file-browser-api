@@ -1,7 +1,7 @@
 <?php
 
-require_once __DIR__ . '/../../../src/web-file-browser-api/get_directory_structure.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
+require_once __DIR__ . '/../../../src/web-file-browser-api/get_directory_structure.php';
 
 header('Content-Type: application/json');
 
@@ -42,5 +42,11 @@ try {
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage(),
+    ], JSON_THROW_ON_ERROR);
+} catch (Exception $e) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'An unexpected error occurred.',
     ], JSON_THROW_ON_ERROR);
 }

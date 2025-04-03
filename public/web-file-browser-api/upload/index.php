@@ -65,7 +65,6 @@ try {
     http_response_code(200);
     echo json_encode([
         'status' => 'success',
-        'name' => basename($file_path),
     ], JSON_THROW_ON_ERROR);
 } catch (JsonException $e) {
     http_response_code(500);

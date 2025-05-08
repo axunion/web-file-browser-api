@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 
-/**
- * Unified JSON response sender.
- */
 function sendJson(array $payload, int $httpCode = 200): void
 {
     http_response_code($httpCode);

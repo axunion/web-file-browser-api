@@ -5,9 +5,6 @@ declare(strict_types=1);
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/get_directory_structure.php';
 
-/**
- * Send a JSON response and exit.
- */
 function sendJson(array $payload, int $httpCode = 200): void
 {
     http_response_code($httpCode);

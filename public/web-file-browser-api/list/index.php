@@ -1,53 +1,56 @@
 <?php
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/get_directory_structure.php';
 
-header('Content-Type: application/json');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    header('Allow: GET');
-    http_response_code(405);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Method not allowed.'
-    ], JSON_THROW_ON_ERROR);
+/**
+ * Send a JSON response and exit.
+ */
+function sendJson(array $payload, int $httpCode = 200): void
+{
+    http_response_code($httpCode);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-try {
-    $data_dir = realpath(__DIR__ . '/../../data');
-    $trash_dir = realpath(__DIR__ . '/../../trash');
-    $sub_path = filter_input(INPUT_GET, 'path') ?? '';
-    $target_path = resolveSafePath($sub_path === 'trash' ? $trash_dir : $data_dir, $sub_path);
+if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
+    header('Allow: GET');
+    sendJson(['status' => 'error', 'message' => 'Method not allowed.'], 405);
+}
 
-    if (!is_readable($target_path)) {
-        throw new RuntimeException('The specified path is not readable.');
+try {
+    $dataDir  = realpath(__DIR__ . '/../../data');
+    $trashDir = realpath(__DIR__ . '/../../trash');
+
+    if ($dataDir === false || $trashDir === false) {
+        throw new Exception('Server configuration error.');
     }
 
-    $list = getDirectoryStructure($target_path);
+    $subPath = filter_input(INPUT_GET, 'path', FILTER_UNSAFE_RAW) ?? '';
+    $base    = ($subPath === 'trash') ? $trashDir : $dataDir;
+    $target = resolveSafePath($base, $subPath);
 
-    http_response_code(200);
-    echo json_encode([
-        'status' => 'success',
-        'list' => $list,
-    ], JSON_THROW_ON_ERROR);
-} catch (JsonException $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Failed to encode JSON response.',
-    ]);
+    if (!is_dir($target) || !is_readable($target)) {
+        throw new RuntimeException('Specified path is not a readable directory.');
+    }
+
+    $items = getDirectoryStructure($target);
+    $list  = array_map(fn($item) => [
+        'type' => $item->type->value,
+        'name' => $item->name,
+        'size' => $item->size,
+    ], $items);
+
+    sendJson(['status' => 'success', 'list' => $list], 200);
+} catch (DirectoryException $e) {
+    sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
 } catch (RuntimeException $e) {
-    http_response_code(400);
-    echo json_encode([
-        'status' => 'error',
-        'message' => $e->getMessage(),
-    ], JSON_THROW_ON_ERROR);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'An unexpected error occurred.',
-    ], JSON_THROW_ON_ERROR);
+    sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
+} catch (JsonException $e) {
+    sendJson(['status' => 'error', 'message' => 'Failed to encode JSON response.'], 500);
+} catch (Throwable $e) {
+    sendJson(['status' => 'error', 'message' => 'An unexpected error occurred.'], 500);
 }

@@ -1,64 +1,66 @@
 <?php
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/rename_file.php';
 
-header('Content-Type: application/json');
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Allow: POST');
-    http_response_code(405);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Method not allowed.',
-    ], JSON_THROW_ON_ERROR);
+/**
+ * Send a JSON response and exit.
+ */
+function sendJson(array $payload, int $code = 200): void
+{
+    http_response_code($code);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
 
-try {
-    $data_dir = realpath(__DIR__ . '/../../data');
-    $sub_path = filter_input(INPUT_POST, 'path') ?? '';
-    $current_name = filter_input(INPUT_POST, 'name') ?? '';
-    $new_name = filter_input(INPUT_POST, 'newName') ?? '';
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Allow: POST');
+    sendJson(['status' => 'error', 'message' => 'Method not allowed.'], 405);
+}
 
-    if (empty($current_name)) {
+try {
+    $dataDir = realpath(__DIR__ . '/../../data');
+
+    if ($dataDir === false || !is_dir($dataDir)) {
+        throw new RuntimeException('Server configuration error: data directory not found.');
+    }
+
+    $subPath      = filter_input(INPUT_POST, 'path',      FILTER_UNSAFE_RAW) ?? '';
+    $currentName  = filter_input(INPUT_POST, 'name',      FILTER_UNSAFE_RAW) ?? '';
+    $newName      = filter_input(INPUT_POST, 'newName',   FILTER_UNSAFE_RAW) ?? '';
+
+    if ($currentName === '') {
         throw new RuntimeException('Current file name is required.');
     }
 
-    if (empty($new_name)) {
+    if ($newName === '') {
         throw new RuntimeException('New file name is required.');
     }
 
-    $target_path = resolveSafePath($data_dir, $sub_path);
+    validateFileName($currentName);
+    validateFileName($newName);
 
-    if (!is_writable($target_path)) {
-        throw new RuntimeException('The specified path is not writable.');
+    $targetDir = resolveSafePath($dataDir, $subPath);
+
+    if (!is_dir($targetDir) || !is_writable($targetDir)) {
+        throw new RuntimeException('Specified path is not a writable directory.');
     }
 
-    $renamed_file_name = renameFile($target_path, $current_name, $new_name);
+    $renamedPath = renameFile($targetDir, $currentName, $newName);
 
-    http_response_code(200);
-    echo json_encode([
-        'status' => 'success',
-        'path' => $sub_path,
-        'filename' => $renamed_file_name,
-    ], JSON_THROW_ON_ERROR);
-} catch (JsonException $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'Failed to encode JSON response.',
-    ]);
+    sendJson([
+        'status'   => 'success',
+        'path'     => $subPath,
+        'filename' => basename($renamedPath),
+        'fullPath' => $renamedPath,
+    ], 200);
 } catch (RuntimeException $e) {
-    http_response_code(400);
-    echo json_encode([
-        'status' => 'error',
-        'message' => $e->getMessage(),
-    ], JSON_THROW_ON_ERROR);
-} catch (Exception $e) {
-    http_response_code(500);
-    echo json_encode([
-        'status' => 'error',
-        'message' => 'An unexpected error occurred.',
-    ], JSON_THROW_ON_ERROR);
+    error_log('Rename error: ' . $e->getMessage());
+    sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
+} catch (Throwable $e) {
+    error_log('Unexpected rename error: ' . $e->getMessage());
+    sendJson(['status' => 'error', 'message' => 'An unexpected error occurred.'], 500);
 }

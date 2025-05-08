@@ -29,13 +29,13 @@ try {
         throw new RuntimeException('New file name is required.');
     }
 
-    $target_path = validate_and_resolve_path($data_dir, $sub_path);
+    $target_path = resolveSafePath($data_dir, $sub_path);
 
     if (!is_writable($target_path)) {
         throw new RuntimeException('The specified path is not writable.');
     }
 
-    $renamed_file_name = rename_file($target_path, $current_name, $new_name);
+    $renamed_file_name = renameFile($target_path, $current_name, $new_name);
 
     http_response_code(200);
     echo json_encode([

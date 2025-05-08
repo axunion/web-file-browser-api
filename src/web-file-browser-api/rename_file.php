@@ -5,29 +5,40 @@ declare(strict_types=1);
 require_once __DIR__ . '/filepath_utils.php';
 
 /**
- * Rename a file in the specified directory.
+ * Rename a file within a directory safely.
  *
- * @param string $directory The directory containing the file.
- * @param string $current_name The current name of the file.
- * @param string $new_name The desired new name for the file.
- * @return string The new name of the file.
- * @throws RuntimeException If the file cannot be renamed or validation fails.
+ * @param string $directory   Path to the target directory.
+ * @param string $currentName Current filename.
+ * @param string $newName     Desired new filename.
+ * @return string             Absolute path of the renamed file.
+ * @throws RuntimeException   On validation or rename failure.
  */
-function rename_file(string $directory, string $current_name, string $new_name): string
+function renameFile(string $directory, string $currentName, string $newName): string
 {
-    validate_file_name($new_name);
+    $realDir = realpath($directory);
 
-    $normalized_directory = rtrim($directory, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $current_file_path = $normalized_directory . $current_name;
-    $new_file_path = $normalized_directory . $new_name;
-
-    if (!file_exists($current_file_path)) {
-        throw new RuntimeException("The file '{$current_name}' does not exist in the directory.");
+    if ($realDir === false || !is_dir($realDir) || !is_writable($realDir)) {
+        throw new RuntimeException("Target directory invalid or not writable: {$directory}");
     }
 
-    if (!rename($current_file_path, $new_file_path)) {
-        throw new RuntimeException("Failed to rename file '{$current_name}' to '{$new_name}'.");
+    $realDir = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    validateFileName($newName);
+
+    $srcPath = $realDir . $currentName;
+    $dstPath = $realDir . $newName;
+
+    if (!is_file($srcPath)) {
+        throw new RuntimeException("File not found: {$srcPath}");
     }
 
-    return $new_name;
+    if (file_exists($dstPath)) {
+        throw new RuntimeException("Cannot rename: target file already exists: {$newName}");
+    }
+
+    if (!@rename($srcPath, $dstPath)) {
+        $err = error_get_last()['message'] ?? '';
+        throw new RuntimeException("Failed to rename '{$currentName}' → '{$newName}': {$err}");
+    }
+
+    return realpath($dstPath) ?: $dstPath;
 }

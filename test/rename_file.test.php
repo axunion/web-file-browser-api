@@ -1,66 +1,111 @@
 <?php
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../src/web-file-browser-api/rename_file.php';
 
 /**
- * Helper function to create a temporary directory for testing.
- *
- * @return string The path to the temporary directory.
+ * Assert that two values are equal.
  */
-function create_temp_directory(): string
+function assertEquals($expected, $actual, string $message = ''): void
 {
-    $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'rename_test_' . uniqid();
-    mkdir($tempDir);
-    return $tempDir;
+    if ($expected !== $actual) {
+        echo "FAIL: $message - Expected '" . var_export($expected, true) . "', got '" . var_export($actual, true) . "'\n";
+        exit(1);
+    }
+    echo "PASS: $message\n";
 }
 
 /**
- * Test the rename_file function.
+ * Assert that a callable throws RuntimeException.
  */
-function test_rename_file()
+function assertException(callable $fn, string $message = ''): void
 {
-    $testDir = create_temp_directory();
-
     try {
-        // Test Case 1: Successfully rename a file
-        $originalFile = $testDir . DIRECTORY_SEPARATOR . 'test.txt';
-        $renamedFile = 'renamed.txt';
-        file_put_contents($originalFile, 'Test content'); // Create a test file
-
-        try {
-            $newName = rename_file($testDir, 'test.txt', $renamedFile);
-            assert($newName === $renamedFile, 'Test Case 1 Failed: Renamed file name does not match.');
-            assert(file_exists($testDir . DIRECTORY_SEPARATOR . $renamedFile), 'Test Case 1 Failed: Renamed file does not exist.');
-            echo "Test Case 1 Passed: File renamed successfully.\n";
-        } catch (RuntimeException $e) {
-            echo "Test Case 1 Failed: " . $e->getMessage() . "\n";
-        }
-
-        // Test Case 2: File does not exist
-        try {
-            rename_file($testDir, 'non_existent.txt', 'new_name.txt');
-            echo "Test Case 2 Failed: Exception not thrown for non-existent file.\n";
-        } catch (RuntimeException $e) {
-            assert(strpos($e->getMessage(), "does not exist") !== false, 'Test Case 2 Failed: Incorrect exception message.');
-            echo "Test Case 2 Passed: Correct exception thrown for non-existent file.\n";
-        }
-
-        // Test Case 3: Invalid new file name
-        try {
-            rename_file($testDir, $renamedFile, 'invalid:name.txt');
-            echo "Test Case 3 Failed: Exception not thrown for invalid file name.\n";
-        } catch (RuntimeException $e) {
-            assert(strpos($e->getMessage(), "contains invalid characters") !== false, 'Test Case 3 Failed: Incorrect exception message.');
-            echo "Test Case 3 Passed: Correct exception thrown for invalid file name.\n";
-        }
-
-        // Clean up the renamed file
-        unlink($testDir . DIRECTORY_SEPARATOR . $renamedFile);
-    } finally {
-        // Clean up: Remove the temporary directory
-        array_map('unlink', glob($testDir . DIRECTORY_SEPARATOR . '*'));
-        rmdir($testDir);
+        $fn();
+        echo "FAIL: $message - No exception thrown\n";
+        exit(1);
+    } catch (RuntimeException $e) {
+        echo "PASS: $message - Caught exception: {$e->getMessage()}\n";
     }
 }
 
-test_rename_file();
+/**
+ * Cleanup helper (recursive).
+ */
+function rrmdir(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+    foreach (scandir($dir) as $item) {
+        if ($item === '.' || $item === '..') continue;
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+        if (is_dir($path)) {
+            rrmdir($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    @rmdir($dir);
+}
+
+
+
+// ---------- renameFile Tests ----------
+
+// Setup temporary directory
+$dir = sys_get_temp_dir() . '/rename_test_' . uniqid();
+mkdir($dir, 0777, true);
+$realDir = realpath($dir);
+
+// Create initial file
+$orig = $realDir . '/old.txt';
+file_put_contents($orig, 'data');
+
+// 1. Valid rename (with trailing slash in directory)
+$newPath1 = renameFile($dir . '/', 'old.txt', 'new.txt');
+assertEquals(
+    $realDir . '/new.txt',
+    $newPath1,
+    'renameFile: return absolute path for new name'
+);
+assertEquals(false, file_exists($orig), 'renameFile: original removed');
+assertEquals(true, file_exists($realDir . '/new.txt'), 'renameFile: moved file exists');
+
+// 2. Valid rename (no trailing slash)
+$newPath2 = renameFile($realDir, 'new.txt', 'new2.txt');
+assertEquals(
+    $realDir . '/new2.txt',
+    $newPath2,
+    'renameFile: return absolute path without trailing slash'
+);
+assertEquals(true, file_exists($realDir . '/new2.txt'), 'renameFile: moved file exists 2');
+
+// 3. Non-existent source file
+assertException(
+    fn() => renameFile($realDir, 'doesnot.txt', 'x.txt'),
+    'renameFile: non-existent source'
+);
+
+// 4. Invalid new name
+assertException(
+    fn() => renameFile($realDir, 'new2.txt', 'bad:name?.txt'),
+    'renameFile: invalid new name'
+);
+
+// 5. Unwritable directory
+// Create a file to rename
+$file3 = $realDir . '/temp.txt';
+file_put_contents($file3, 'c');
+chmod($realDir, 0444);
+assertException(
+    fn() => renameFile($realDir, 'temp.txt', 'temp2.txt'),
+    'renameFile: unwritable directory'
+);
+chmod($realDir, 0755);
+
+// Cleanup temporary directory
+rrmdir($realDir);
+
+echo "All tests passed.\n";

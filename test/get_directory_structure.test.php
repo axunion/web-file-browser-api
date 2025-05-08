@@ -1,108 +1,113 @@
 <?php
 
+declare(strict_types=1);
+
 require_once __DIR__ . '/../src/web-file-browser-api/get_directory_structure.php';
 
 /**
- * Helper function to assert a condition
- *
- * @param bool $condition The condition to check
- * @param string $message The message to display
+ * Assert that two values are equal.
  */
-function assert_true($condition, $message)
+function assertEquals($expected, $actual, string $message = ''): void
 {
-    if (!$condition) {
-        echo "Assertion failed: $message\n";
-    } else {
-        echo "Test passed: $message\n";
+    if ($expected !== $actual) {
+        echo "FAIL: $message - Expected '" . var_export($expected, true) . "', got '" . var_export($actual, true) . "'\n";
+        exit(1);
     }
+    echo "PASS: $message\n";
 }
 
 /**
- * Helper function to recursively remove a directory
- *
- * @param string $dir The directory path
+ * Assert that a callable throws a specific exception.
  */
-function remove_directory($dir)
+function assertException(callable $fn, string $message = ''): void
 {
-    if (is_dir($dir)) {
-        $objects = scandir($dir);
-        foreach ($objects as $object) {
-            if ($object != "." && $object != "..") {
-                $object_path = $dir . DIRECTORY_SEPARATOR . $object;
-                if (is_dir($object_path) && !is_link($object_path)) {
-                    remove_directory($object_path);
-                } else {
-                    unlink($object_path);
-                }
-            }
-        }
-        rmdir($dir);
-    }
-}
-
-/**
- * Run the tests for the get_directory_structure function
- */
-function run_tests()
-{
-    $tempDir = setup_test_directory();
-
-    // Test 1: Empty directory
-    $structure = get_directory_structure($tempDir);
-    assert_true(empty($structure), "Empty directory test");
-    remove_directory($tempDir);
-
-    // Test 2: Directory with files and subdirectory
-    $tempDir = setup_test_directory();
-
-    // Create test files and a subdirectory
-    $file1 = $tempDir . DIRECTORY_SEPARATOR . 'file1.txt';
-    $file2 = $tempDir . DIRECTORY_SEPARATOR . 'file2.log';
-    $subdir = $tempDir . DIRECTORY_SEPARATOR . 'subdir';
-
-    file_put_contents($file1, 'content for file1');
-    file_put_contents($file2, 'content for file2');
-    mkdir($subdir);
-
-    $structure = get_directory_structure($tempDir);
-
-    // Assertions
-    assert_true(count($structure) === 3, "Directory contains 3 items");
-
-    $expectedItems = [
-        ['name' => 'file1.txt', 'size' => filesize($file1)],
-        ['name' => 'file2.log', 'size' => filesize($file2)],
-        ['name' => 'subdir', 'size' => null],
-    ];
-
-    foreach ($expectedItems as $expected) {
-        $item = array_filter($structure, fn($i) => $i->name === $expected['name']);
-        assert_true(!empty($item), "Item {$expected['name']} exists in structure");
-        $item = array_values($item)[0];
-        assert_true($item->size === $expected['size'], "Item {$expected['name']} size is correct");
-    }
-
-    remove_directory($tempDir);
-
-    // Test 3: Non-existent directory
     try {
-        get_directory_structure('/path/to/non/existent/directory');
-        echo "Test failed: Exception not thrown for non-existent directory\n";
+        $fn();
+        echo "FAIL: $message - No exception thrown\n";
+        exit(1);
     } catch (Exception $e) {
-        echo "Test passed: Exception thrown for non-existent directory\n";
+        echo "PASS: $message - Caught exception: " . get_class($e) . " (" . $e->getMessage() . ")\n";
     }
 }
 
+
 /**
- * Set up a temporary test directory
- *
- * @return string The path to the test directory
+ * Cleanup function.
  */
-function setup_test_directory(): string
+function rrmdir(string $dir): void
 {
-    $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'test_dir_' . uniqid();
-    mkdir($tempDir);
-    return $tempDir;
+    if (!is_dir($dir)) return;
+    foreach (scandir($dir) as $item) {
+        if ($item === '.' || $item === '..') continue;
+        $path = $dir . DIRECTORY_SEPARATOR . $item;
+        is_dir($path) ? rrmdir($path) : unlink($path);
+    }
+    rmdir($dir);
 }
 
-run_tests();
+
+// ---------- DirectoryItem constructor tests ----------
+
+// Valid FILE item
+$itemFile = new DirectoryItem(ItemType::FILE, 'example.txt', 123);
+assertEquals(ItemType::FILE, $itemFile->type, 'DirectoryItem: file type');
+assertEquals('example.txt', $itemFile->name, 'DirectoryItem: file name');
+assertEquals(123, $itemFile->size, 'DirectoryItem: file size');
+
+// Valid DIRECTORY item
+$itemDir = new DirectoryItem(ItemType::DIRECTORY, 'folder', null);
+assertEquals(ItemType::DIRECTORY, $itemDir->type, 'DirectoryItem: directory type');
+assertEquals('folder', $itemDir->name, 'DirectoryItem: directory name');
+assertEquals(null, $itemDir->size, 'DirectoryItem: directory size');
+
+// FILE without size should throw
+assertException(
+    fn() => new DirectoryItem(ItemType::FILE, 'no_size.txt', null),
+    'DirectoryItem: file missing size'
+);
+
+// DIRECTORY with size should throw
+assertException(
+    fn() => new DirectoryItem(ItemType::DIRECTORY, 'bad_dir', 10),
+    'DirectoryItem: directory with size'
+);
+
+// ---------- getDirectoryStructure tests ----------
+
+// Invalid path
+assertException(
+    fn() => getDirectoryStructure('/no/such/path'),
+    'getDirectoryStructure: invalid path'
+);
+
+// Setup temporary directory structure
+$base = sys_get_temp_dir() . '/dir_test_' . uniqid();
+mkdir($base, 0777, true);
+mkdir($base . '/subdir', 0777, true);
+file_put_contents($base . '/file1.txt', 'data1');
+file_put_contents($base . '/file2.log', 'data2');
+
+// Execute
+$items = getDirectoryStructure($base);
+
+// Expect 3 items: one directory, then two files sorted by name
+assertEquals(3, count($items), 'getDirectoryStructure: item count');
+
+// Directory first
+assertEquals(ItemType::DIRECTORY, $items[0]->type, 'First item is directory');
+assertEquals('subdir', $items[0]->name, 'Directory name');
+assertEquals(null, $items[0]->size, 'Directory size is null');
+
+// file1.txt next
+assertEquals(ItemType::FILE, $items[1]->type, 'Second item is file');
+assertEquals('file1.txt', $items[1]->name, 'First file name');
+assertEquals(filesize($base . '/file1.txt'), $items[1]->size, 'First file size');
+
+// file2.log last
+assertEquals(ItemType::FILE, $items[2]->type, 'Third item is file');
+assertEquals('file2.log', $items[2]->name, 'Second file name');
+assertEquals(filesize($base . '/file2.log'), $items[2]->size, 'Second file size');
+
+rrmdir($base);
+
+echo "All tests passed.\n";

@@ -5,35 +5,49 @@ declare(strict_types=1);
 require_once __DIR__ . '/filepath_utils.php';
 
 /**
- * Moves the specified file to the target directory.
+ * Moves the specified file to the target directory, handling cross-filesystem
+ * and naming collisions robustly.
  *
- * @param string $file_path The path of the file to move.
- * @param string $destination_dir The target directory.
- * @return string The new file path after moving.
- * @throws RuntimeException If the file does not exist, is not a regular file, the destination directory is invalid, or the file cannot be moved.
+ * @param string $filePath       Absolute or relative path of the file to move.
+ * @param string $destinationDir Absolute or relative path of the target directory.
+ * @return string                New absolute file path after moving.
+ * @throws RuntimeException      If validations fail or move cannot be completed.
  */
-function move_file(string $file_path, string $destination_dir): string
+function moveFile(string $filePath, string $destinationDir): string
 {
-    if (!is_file($file_path)) {
-        throw new RuntimeException("Specified path is not a file: {$file_path}");
+    $realSrc = realpath($filePath);
+
+    if ($realSrc === false || !is_file($realSrc)) {
+        throw new RuntimeException("Specified path is not a valid file: {$filePath}");
     }
 
-    if (!is_dir($destination_dir) || !is_writable($destination_dir)) {
-        throw new RuntimeException("Destination directory does not exist or is not writable: {$destination_dir}");
+    $realDest = realpath($destinationDir);
+
+    if ($realDest === false || !is_dir($realDest) || !is_writable($realDest)) {
+        throw new RuntimeException("Destination dir invalid or unwritable: {$destinationDir}");
     }
 
-    $filename = basename($file_path);
-    validate_file_name($filename);
-    $destination_path = construct_sequential_file_path($destination_dir, $filename);
+    $realDest = rtrim($realDest, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
-    if (!rename($file_path, $destination_path)) {
-        if (!file_exists($file_path)) {
-            throw new RuntimeException("File was removed before moving: {$file_path}");
+    $filename = basename($realSrc);
+    validateFileName($filename);
+    $target   = constructSequentialFilePath($realDest, $filename);
+
+    if (!@rename($realSrc, $target)) {
+        $error = error_get_last()['message'] ?? '';
+
+        if (strpos($error, 'EXDEV') !== false) {
+            if (!@copy($realSrc, $target)) {
+                throw new RuntimeException("Failed to copy file across devices: {$error}");
+            }
+            if (!@unlink($realSrc)) {
+                @unlink($target);
+                throw new RuntimeException("Failed to remove original after copy.");
+            }
+        } else {
+            throw new RuntimeException("Failed to rename file: {$error}");
         }
-        throw new RuntimeException("Failed to move file to destination: {$file_path}");
     }
 
-    error_log("Moved file {$file_path} to {$destination_path}");
-
-    return $destination_path;
+    return realpath($target) ?: $target;
 }

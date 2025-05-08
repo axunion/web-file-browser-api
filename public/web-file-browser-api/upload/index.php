@@ -43,17 +43,17 @@ try {
         throw new RuntimeException('Invalid uploaded file.');
     }
 
-    validate_file_name($uploaded_file_name);
+    validateFileName($uploaded_file_name);
 
     $data_dir = realpath(__DIR__ . '/../../data');
     $sub_path = filter_input(INPUT_POST, 'path') ?? '';
-    $target_path = validate_and_resolve_path($data_dir, $sub_path);
+    $target_path = resolveSafePath($data_dir, $sub_path);
 
     if (!is_writable($target_path)) {
         throw new RuntimeException('The specified path is not writable.');
     }
 
-    $file_path = construct_sequential_file_path($target_path, $uploaded_file_name);
+    $file_path = constructSequentialFilePath($target_path, $uploaded_file_name);
 
     if (!move_uploaded_file($uploaded_tmp_name, $file_path)) {
         $error = error_get_last();

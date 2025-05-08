@@ -3,84 +3,116 @@
 declare(strict_types=1);
 
 /**
- * Validates and resolves a path within a base directory.
+ * Resolve a user-supplied path within a given base directory safely.
  *
- * @param string $base_dir The base directory (must be an absolute path).
- * @param string $path The user-provided relative path.
- * @return string The resolved and validated absolute path.
- * @throws RuntimeException If the path is invalid or outside the base directory.
+ * @param string $baseDir  Absolute path to the base directory.
+ * @param string $userPath Relative path provided by the user.
+ * @return string          The safely resolved path (may not exist yet).
+ * @throws RuntimeException If the base is invalid or the resolved parent escapes the base.
  */
-function validate_and_resolve_path(string $base_dir, string $path): string
+function resolveSafePath(string $baseDir, string $userPath): string
 {
-    $real_base_dir = realpath($base_dir);
+    $realBase = realpath($baseDir);
 
-    if ($real_base_dir === false || !is_dir($real_base_dir)) {
-        throw new RuntimeException('The base directory does not exist or is not a valid directory.');
+    if ($realBase === false || !is_dir($realBase)) {
+        throw new RuntimeException('Invalid base directory.');
     }
 
-    $combined_path = $real_base_dir . DIRECTORY_SEPARATOR . ltrim($path, DIRECTORY_SEPARATOR);
-    $resolved_path = realpath($combined_path);
+    $combined  = $realBase . DIRECTORY_SEPARATOR . ltrim($userPath, '/\\');
+    $parentDir = dirname($combined);
+    $realParent = realpath($parentDir);
 
-    if ($resolved_path === false) {
-        throw new RuntimeException('The specified path does not exist.');
+    if ($realParent === false) {
+        throw new RuntimeException('Parent directory does not exist.');
     }
 
-    if (
-        $resolved_path !== $real_base_dir &&
-        strpos($resolved_path, $real_base_dir . DIRECTORY_SEPARATOR) !== 0
-    ) {
-        throw new RuntimeException('The specified path is outside the base directory.');
+    if (strcasecmp(substr($realParent, 0, strlen($realBase)), $realBase) !== 0) {
+        throw new RuntimeException('Attempt to escape base directory.');
     }
 
-    return $resolved_path;
+    return $combined;
 }
 
 /**
- * Validate a file name to ensure it does not contain invalid characters.
+ * Validate a file name to ensure it meets platform-specific rules.
  *
- * @param string $file_name The file name to validate.
+ * @param string $fileName The file name to validate.
  * @return void
- * @throws RuntimeException If the file name contains invalid characters.
+ * @throws RuntimeException If the file name is invalid.
  */
-function validate_file_name(string $file_name): void
+function validateFileName(string $fileName): void
 {
-    if (empty($file_name)) {
-        throw new RuntimeException("The file name '{$file_name}' cannot be empty.");
+    if (class_exists('Normalizer')) {
+        $fileName = \Normalizer::normalize($fileName, \Normalizer::FORM_C);
     }
 
-    if (strlen($file_name) > 255) {
-        throw new RuntimeException("The file name '{$file_name}' exceeds the maximum allowed length of 255 characters.");
+    if ($fileName === '') {
+        throw new RuntimeException("The file name cannot be empty.");
     }
 
-    if (preg_match('/[<>:"\/\\|?*]/', $file_name)) {
-        throw new RuntimeException("The file name '{$file_name}' contains invalid characters.");
+    if (mb_strlen($fileName, 'UTF-8') > 255) {
+        throw new RuntimeException("The file name exceeds the maximum length of 255 characters.");
+    }
+
+    if (preg_match('/[<>:"\/\\\\|\?\*\x00-\x1F]/u', $fileName)) {
+        throw new RuntimeException("The file name contains invalid characters.");
+    }
+
+    $upper = strtoupper(pathinfo($fileName, PATHINFO_FILENAME));
+
+    if (preg_match('/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/', $upper)) {
+        throw new RuntimeException("The file name '{$fileName}' is a reserved name on Windows.");
+    }
+
+    if (preg_match('/[\. ]$/', $fileName)) {
+        throw new RuntimeException("The file name must not end with a space or dot.");
     }
 }
 
 /**
- * Construct a unique file path in the destination directory using sequential numbering.
+ * Construct a unique file path in the destination directory by appending a counter if needed.
  *
- * @param string $directory_path The destination directory.
- * @param string $filename The desired filename.
- * @return string The unique file path.
+ * @param string $directoryPath Absolute path to the target directory.
+ * @param string $filename      Desired filename (with or without extension).
+ * @return string               Unique file path within the directory.
+ * @throws RuntimeException     If the directory is invalid or not writable.
  */
-function construct_sequential_file_path(string $directory_path, string $filename): string
+function constructSequentialFilePath(string $directoryPath, string $filename): string
 {
-    $normalized_directory = rtrim($directory_path, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
-    $basename = pathinfo($filename, PATHINFO_FILENAME);
-    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-    $extension = empty($extension) ? '' : ".{$extension}";
-    $base_path = "{$normalized_directory}{$basename}{$extension}";
+    $realDir = realpath($directoryPath);
 
-    if (!file_exists($base_path)) {
-        return $base_path;
+    if ($realDir === false || !is_dir($realDir) || !is_writable($realDir)) {
+        throw new RuntimeException("Invalid or unwritable directory: {$directoryPath}");
+    }
+
+    $realDir = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $baseName  = pathinfo($filename, PATHINFO_FILENAME);
+    $extension = pathinfo($filename, PATHINFO_EXTENSION);
+    $extPart   = $extension === '' ? '' : '.' . strtolower($extension);
+    $candidate = $realDir . $baseName . $extPart;
+
+    if (!file_exists($candidate)) {
+        return $candidate;
+    }
+
+    $lockFile = $realDir . '.construct_lock';
+    $fp = fopen($lockFile, 'c');
+
+    if ($fp) {
+        flock($fp, LOCK_EX);
     }
 
     $counter = 1;
 
-    while (file_exists("{$normalized_directory}{$basename}_{$counter}{$extension}")) {
+    do {
+        $candidate = $realDir . $baseName . '_' . $counter . $extPart;
         $counter++;
+    } while (file_exists($candidate));
+
+    if ($fp) {
+        flock($fp, LOCK_UN);
+        fclose($fp);
     }
 
-    return "{$normalized_directory}{$basename}_{$counter}{$extension}";
+    return $candidate;
 }

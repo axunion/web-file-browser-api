@@ -19,13 +19,13 @@ try {
     $data_dir = realpath(__DIR__ . '/../../data');
     $trash_dir = realpath(__DIR__ . '/../../trash');
     $sub_path = filter_input(INPUT_GET, 'path') ?? '';
-    $target_path = validate_and_resolve_path($sub_path === 'trash' ? $trash_dir : $data_dir, $sub_path);
+    $target_path = resolveSafePath($sub_path === 'trash' ? $trash_dir : $data_dir, $sub_path);
 
     if (!is_readable($target_path)) {
         throw new RuntimeException('The specified path is not readable.');
     }
 
-    $list = get_directory_structure($target_path);
+    $list = getDirectoryStructure($target_path);
 
     http_response_code(200);
     echo json_encode([

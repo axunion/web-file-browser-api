@@ -49,36 +49,38 @@ try {
 
     $dataDir = realpath(__DIR__ . '/../../data');
 
-    if ($dataDir === false || !is_dir($dataDir) || !is_writable($dataDir)) {
+    if ($dataDir === false || !is_dir($dataDir)) {
         throw new RuntimeException('Server misconfiguration: data directory unavailable.');
     }
 
     $subPath   = filter_input(INPUT_POST, 'path', FILTER_UNSAFE_RAW) ?? '';
     $targetDir = resolveSafePath($dataDir, $subPath);
 
+    if (!file_exists($targetDir)) {
+        if (!mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
+            throw new RuntimeException("Failed to create directory: {$targetDir}");
+        }
+    }
+
     if (!is_dir($targetDir) || !is_writable($targetDir)) {
         throw new RuntimeException('Target path is not a writable directory.');
     }
 
-    $finfo       = new finfo(FILEINFO_MIME_TYPE);
+    $finfo        = new finfo(FILEINFO_MIME_TYPE);
     $allowedMimes = ['image/jpeg', 'image/png'];
-    $saved = [];
+    $saved        = [];
 
     for ($i = 0; $i < $count; $i++) {
-        $error = $files['error'][$i];
-
-        if ($error !== UPLOAD_ERR_OK) {
-            throw new RuntimeException("Upload error on file #" . ($i + 1));
-        }
-
+        $error   = $files['error'][$i];
         $tmpName = $files['tmp_name'][$i];
 
-        if (!is_uploaded_file($tmpName)) {
-            throw new RuntimeException("Invalid upload for file #" . ($i + 1));
+        if ($error !== UPLOAD_ERR_OK || !is_uploaded_file($tmpName)) {
+            throw new RuntimeException("Upload error on file #" . ($i + 1));
         }
 
         $origName = basename($files['name'][$i]);
         validateFileName($origName);
+
         $mime = $finfo->file($tmpName);
 
         if (!in_array($mime, $allowedMimes, true)) {

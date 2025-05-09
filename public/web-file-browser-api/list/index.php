@@ -56,7 +56,9 @@ try {
 } catch (RuntimeException $e) {
     sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
 } catch (JsonException $e) {
+    error_log('JSON encoding error: ' . $e->getMessage());
     sendJson(['status' => 'error', 'message' => 'Failed to encode JSON response.'], 500);
 } catch (Throwable $e) {
-    sendJson(['status' => 'error', 'message' => $e->getMessage()], 500);
+    error_log('Unexpected error: ' . $e->getMessage());
+    sendJson(['status' => 'error', 'message' => 'An unexpected error occurred.'], 500);
 }

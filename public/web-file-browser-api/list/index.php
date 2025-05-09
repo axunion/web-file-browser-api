@@ -26,9 +26,18 @@ try {
         throw new Exception('Server configuration error.');
     }
 
-    $subPath = filter_input(INPUT_GET, 'path', FILTER_UNSAFE_RAW) ?? '';
-    $base    = ($subPath === 'trash') ? $trashDir : $dataDir;
-    $target = resolveSafePath($base, $subPath);
+    $rawPath = filter_input(INPUT_GET, 'path', FILTER_UNSAFE_RAW) ?? '';
+    $segments = explode('/', trim($rawPath, '/'));
+
+    if (isset($segments[0]) && $segments[0] === 'trash') {
+        $base     = $trashDir;
+        $userPath = isset($segments[1]) ? implode('/', array_slice($segments, 1)) : '';
+    } else {
+        $base     = $dataDir;
+        $userPath = $rawPath;
+    }
+
+    $target = resolveSafePath($base, $userPath);
 
     if (!is_dir($target) || !is_readable($target)) {
         throw new RuntimeException('Specified path is not a readable directory.');
@@ -49,5 +58,5 @@ try {
 } catch (JsonException $e) {
     sendJson(['status' => 'error', 'message' => 'Failed to encode JSON response.'], 500);
 } catch (Throwable $e) {
-    sendJson(['status' => 'error', 'message' => 'An unexpected error occurred.'], 500);
+    sendJson(['status' => 'error', 'message' => $e->getMessage()], 500);
 }

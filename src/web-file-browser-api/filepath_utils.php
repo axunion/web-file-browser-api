@@ -18,8 +18,12 @@ function resolveSafePath(string $baseDir, string $userPath): string
         throw new RuntimeException('Invalid base directory.');
     }
 
-    $combined  = $realBase . DIRECTORY_SEPARATOR . ltrim($userPath, '/\\');
-    $parentDir = dirname($combined);
+    if ($userPath === '' || $userPath === '.' || $userPath === './') {
+        return $realBase;
+    }
+
+    $combined   = $realBase . DIRECTORY_SEPARATOR . ltrim($userPath, '/\\');
+    $parentDir  = dirname($combined);
     $realParent = realpath($parentDir);
 
     if ($realParent === false) {

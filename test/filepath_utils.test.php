@@ -60,6 +60,30 @@ $base = sys_get_temp_dir() . '/base_' . uniqid();
 mkdir($base . '/subdir', 0777, true);
 file_put_contents($base . '/subdir/file.txt', 'content');
 
+// 0a. Empty userPath returns base
+$result0 = resolveSafePath($base, '');
+assertEquals(
+    realpath($base),
+    $result0,
+    'resolveSafePath: empty userPath returns base'
+);
+
+// 0b. "." returns base
+$resultDot = resolveSafePath($base, '.');
+assertEquals(
+    realpath($base),
+    $resultDot,
+    'resolveSafePath: "." returns base'
+);
+
+// 0c. "./" returns base
+$resultDotSlash = resolveSafePath($base, './');
+assertEquals(
+    realpath($base),
+    $resultDotSlash,
+    'resolveSafePath: "./" returns base'
+);
+
 // 1. Valid path
 $result = resolveSafePath($base, 'subdir/file.txt');
 assertEquals(

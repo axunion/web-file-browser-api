@@ -52,25 +52,11 @@ function rrmdir(string $dir): void
 $itemFile = new DirectoryItem(ItemType::FILE, 'example.txt', 123);
 assertEquals(ItemType::FILE, $itemFile->type, 'DirectoryItem: file type');
 assertEquals('example.txt', $itemFile->name, 'DirectoryItem: file name');
-assertEquals(123, $itemFile->size, 'DirectoryItem: file size');
 
 // Valid DIRECTORY item
 $itemDir = new DirectoryItem(ItemType::DIRECTORY, 'folder', null);
 assertEquals(ItemType::DIRECTORY, $itemDir->type, 'DirectoryItem: directory type');
 assertEquals('folder', $itemDir->name, 'DirectoryItem: directory name');
-assertEquals(null, $itemDir->size, 'DirectoryItem: directory size');
-
-// FILE without size should throw
-assertException(
-    fn() => new DirectoryItem(ItemType::FILE, 'no_size.txt', null),
-    'DirectoryItem: file missing size'
-);
-
-// DIRECTORY with size should throw
-assertException(
-    fn() => new DirectoryItem(ItemType::DIRECTORY, 'bad_dir', 10),
-    'DirectoryItem: directory with size'
-);
 
 // ---------- getDirectoryStructure tests ----------
 
@@ -96,17 +82,14 @@ assertEquals(3, count($items), 'getDirectoryStructure: item count');
 // Directory first
 assertEquals(ItemType::DIRECTORY, $items[0]->type, 'First item is directory');
 assertEquals('subdir', $items[0]->name, 'Directory name');
-assertEquals(null, $items[0]->size, 'Directory size is null');
 
 // file1.txt next
 assertEquals(ItemType::FILE, $items[1]->type, 'Second item is file');
 assertEquals('file1.txt', $items[1]->name, 'First file name');
-assertEquals(filesize($base . '/file1.txt'), $items[1]->size, 'First file size');
 
 // file2.log last
 assertEquals(ItemType::FILE, $items[2]->type, 'Third item is file');
 assertEquals('file2.log', $items[2]->name, 'Second file name');
-assertEquals(filesize($base . '/file2.log'), $items[2]->size, 'Second file size');
 
 rrmdir($base);
 

@@ -47,7 +47,6 @@ try {
     $list  = array_map(fn($item) => [
         'type' => $item->type->value,
         'name' => $item->name,
-        'size' => $item->size,
     ], $items);
 
     sendJson(['status' => 'success', 'list' => $list], 200);

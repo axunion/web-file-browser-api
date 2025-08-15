@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 
+const MAX_FILE_SIZE = 100 * 1024 * 1024;
+
 function sendJson(array $payload, int $httpCode = 200): void
 {
     http_response_code($httpCode);
@@ -45,7 +47,7 @@ try {
 
     validateFileName($file['name']);
 
-    if ($file['size'] > 5 * 1024 * 1024) {
+    if ($file['size'] > MAX_FILE_SIZE) {
         throw new RuntimeException('Uploaded file exceeds 5MB limit.');
     }
 

@@ -30,6 +30,12 @@ function compressResizeImage(
 }
 ```
 
+## Comments and Messages
+
+- **Code comments**: English only, essential information only (no obvious comments)
+- **Error messages**: English, user-facing and consistent across all endpoints
+- **Git commits**: **MUST be in English**. Write concise, imperative mood descriptions (e.g., "Add file validation", "Fix path resolution bug"). Never use Japanese or other languages.
+
 ## Security Patterns (CRITICAL)
 
 ### 1. Path Resolution

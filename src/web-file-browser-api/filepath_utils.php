@@ -30,7 +30,7 @@ function resolveSafePath(string $baseDir, string $userPath): string
         throw new RuntimeException('Parent directory does not exist.');
     }
 
-    if (strcasecmp(substr($realParent, 0, strlen($realBase)), $realBase) !== 0) {
+    if (strncmp($realParent . DIRECTORY_SEPARATOR, $realBase . DIRECTORY_SEPARATOR, strlen($realBase) + 1) !== 0) {
         throw new RuntimeException('Attempt to escape base directory.');
     }
 

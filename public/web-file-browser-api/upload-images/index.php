@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/../../../src/web-file-browser-api/common_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/image_utils.php';
 
@@ -12,14 +13,6 @@ const MAX_WIDTH          = 1280;
 const MAX_HEIGHT         = 720;
 const JPEG_QUALITY       = 85;
 const PNG_COMPRESSION    = 6;
-
-function sendJson(array $payload, int $httpCode = 200): void
-{
-    http_response_code($httpCode);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');

@@ -49,12 +49,12 @@ function rrmdir(string $dir): void
 // ---------- DirectoryItem constructor tests ----------
 
 // Valid FILE item
-$itemFile = new DirectoryItem(ItemType::FILE, 'example.txt', 123);
+$itemFile = new DirectoryItem(ItemType::FILE, 'example.txt');
 assertEquals(ItemType::FILE, $itemFile->type, 'DirectoryItem: file type');
 assertEquals('example.txt', $itemFile->name, 'DirectoryItem: file name');
 
 // Valid DIRECTORY item
-$itemDir = new DirectoryItem(ItemType::DIRECTORY, 'folder', null);
+$itemDir = new DirectoryItem(ItemType::DIRECTORY, 'folder');
 assertEquals(ItemType::DIRECTORY, $itemDir->type, 'DirectoryItem: directory type');
 assertEquals('folder', $itemDir->name, 'DirectoryItem: directory name');
 

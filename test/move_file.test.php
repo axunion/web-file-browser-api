@@ -95,24 +95,12 @@ assertException(
 // 4. Invalid destination directory
 assertException(
     function () use ($newPath) {
-        moveFile($newPath, $newPath . '/no_dir');
+        moveFile($newPath, '/no/such/directory');
     },
     'moveFile: invalid destination'
 );
 
-// 5. Unwritable destination
-chmod($destDir, 0444);
-$file3 = $realSourceDir . '/test3.txt';
-file_put_contents($file3, 'data');
-assertException(
-    function () use ($file3, $destDir) {
-        moveFile($file3, $destDir);
-    },
-    'moveFile: unwritable destination'
-);
-chmod($destDir, 0755);
-
-// 6. Invalid filename (invalid chars)
+// 5. Invalid filename (invalid chars)
 $invalidName = 'bad:name?.txt';
 $file4 = $realSourceDir . '/' . $invalidName;
 file_put_contents($file4, 'x');

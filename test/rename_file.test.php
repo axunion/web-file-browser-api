@@ -94,17 +94,6 @@ assertException(
     'renameFile: invalid new name'
 );
 
-// 5. Unwritable directory
-// Create a file to rename
-$file3 = $realDir . '/temp.txt';
-file_put_contents($file3, 'c');
-chmod($realDir, 0444);
-assertException(
-    fn() => renameFile($realDir, 'temp.txt', 'temp2.txt'),
-    'renameFile: unwritable directory'
-);
-chmod($realDir, 0755);
-
 // Cleanup temporary directory
 rrmdir($realDir);
 

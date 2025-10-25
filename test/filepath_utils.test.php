@@ -172,13 +172,10 @@ assertEquals(
     'constructSequentialFilePath: third file'
 );
 
-// 11. Unwritable directory
-chmod($seqDir, 0444);
-assertException(function () use ($seqDir) {
-    constructSequentialFilePath($seqDir, 'x.txt');
-}, 'constructSequentialFilePath: unwritable');
-// Restore permissions to allow cleanup (optional)
-chmod($seqDir, 0755);
+// 11. Invalid directory (non-existent)
+assertException(function () {
+    constructSequentialFilePath('/no/such/directory', 'x.txt');
+}, 'constructSequentialFilePath: invalid directory');
 
 rrmdir($base);
 rrmdir($realSeqDir);

@@ -4,15 +4,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/common_utils.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
-require_once __DIR__ . '/../../../src/web-file-browser-api/image_utils.php';
 
-const MAX_FILES          = 10;
-const MAX_TOTAL_SIZE     = 30 * 1024 * 1024;
-const COMPRESS_THRESHOLD = 5  * 1024 * 1024;
-const MAX_WIDTH          = 1280;
-const MAX_HEIGHT         = 720;
-const JPEG_QUALITY       = 85;
-const PNG_COMPRESSION    = 6;
+const MAX_FILES       = 10;
+const MAX_FILE_SIZE   = 10 * 1024 * 1024;
+const MAX_TOTAL_SIZE  = 30 * 1024 * 1024;
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Allow: POST');
@@ -74,6 +69,12 @@ try {
         $origName = basename($files['name'][$i]);
         validateFileName($origName);
 
+        $fileSize = $files['size'][$i];
+
+        if ($fileSize > MAX_FILE_SIZE) {
+            throw new RuntimeException(sprintf('File %s exceeds %d MB limit.', $origName, MAX_FILE_SIZE / (1024 * 1024)));
+        }
+
         $mime = $finfo->file($tmpName);
 
         if (!in_array($mime, $allowedMimes, true)) {
@@ -82,24 +83,8 @@ try {
 
         $destPath = constructSequentialFilePath($targetDir, $origName);
 
-        if (filesize($tmpName) > COMPRESS_THRESHOLD) {
-            $tmpDst = sys_get_temp_dir() . '/img_' . uniqid() . '.' . pathinfo($origName, PATHINFO_EXTENSION);
-            compressResizeImage(
-                $tmpName,
-                $tmpDst,
-                MAX_WIDTH,
-                MAX_HEIGHT,
-                JPEG_QUALITY,
-                PNG_COMPRESSION
-            );
-
-            if (!rename($tmpDst, $destPath)) {
-                throw new RuntimeException("Failed to save compressed image for {$origName}.");
-            }
-        } else {
-            if (!move_uploaded_file($tmpName, $destPath)) {
-                throw new RuntimeException("Failed to move uploaded file {$origName}.");
-            }
+        if (!move_uploaded_file($tmpName, $destPath)) {
+            throw new RuntimeException("Failed to move uploaded file {$origName}.");
         }
 
         $saved[] = basename($destPath);

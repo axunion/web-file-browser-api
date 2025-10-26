@@ -20,12 +20,7 @@ All operations are sandboxed within `public/data/` (active files) and `public/tr
 - UTF-8 throughout (filenames, JSON responses)
 
 ```php
-function compressResizeImage(
-    string $src,
-    string $dst,
-    int $maxWidth = 1920,
-    int $maxHeight = 1080
-): void {
+function validateFileName(string $name): void {
     // Implementation
 }
 ```
@@ -80,17 +75,14 @@ Returns `DirectoryItem[]` with `ItemType` enum:
 - Natural case-insensitive sort (`strnatcasecmp`)
 - Skips symlinks for security
 
-### Image Processing (`image_utils.php`)
-`compressResizeImage()` handles JPEG/PNG with quality/compression settings.
-
 ### File Operations (`move_file.php`, `rename_file.php`)
 Cross-device move support with automatic fallback to copy+unlink.
 
 
 ## File Upload Constraints
 
-- **Standard upload**: 100MB max (`MAX_FILE_SIZE`), JPEG/PNG/PDF only
-- **Image upload**: 10 files max, 30MB total, auto-compression for files >5MB
+- **Standard upload (`upload/`)**: 100MB max, JPEG/PNG/PDF only
+- **Image batch upload (`upload-images/`)**: 10 files max, 10MB per file, 30MB total, JPEG/PNG only
 - MIME validation via `finfo`, uses `is_uploaded_file()` and `move_uploaded_file()`
 
 ## Testing

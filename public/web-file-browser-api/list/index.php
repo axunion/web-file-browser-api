@@ -2,55 +2,30 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../../../src/web-file-browser-api/common_utils.php';
-require_once __DIR__ . '/../../../src/web-file-browser-api/filepath_utils.php';
-require_once __DIR__ . '/../../../src/web-file-browser-api/get_directory_structure.php';
+require_once __DIR__ . '/../../../src/web-file-browser-api/RequestHandler.php';
+require_once __DIR__ . '/../../../src/web-file-browser-api/DirectoryScanner.php';
 
-if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
-    header('Allow: GET');
-    sendJson(['status' => 'error', 'message' => 'Method not allowed.'], 405);
+final class ListHandler extends RequestHandler
+{
+    protected array $allowedMethods = ['GET'];
+
+    protected function process(): void
+    {
+        $rawPath = $this->getInput(INPUT_GET, 'path', '');
+        $target = $this->resolvePath($rawPath, allowTrash: true);
+
+        if (!is_dir($target) || !is_readable($target)) {
+            throw new RuntimeException('Specified path is not a readable directory.');
+        }
+
+        $items = DirectoryScanner::scan($target);
+        $list = array_map(fn($item) => [
+            'type' => $item->type->value,
+            'name' => $item->name,
+        ], $items);
+
+        $this->sendSuccess(['list' => $list]);
+    }
 }
 
-try {
-    $dataDir  = realpath(__DIR__ . '/../../data');
-    $trashDir = realpath(__DIR__ . '/../../trash');
-
-    if ($dataDir === false || $trashDir === false) {
-        throw new Exception('Server configuration error.');
-    }
-
-    $rawPath = filter_input(INPUT_GET, 'path', FILTER_UNSAFE_RAW) ?? '';
-    $segments = explode('/', trim($rawPath, '/'));
-
-    if (isset($segments[0]) && $segments[0] === 'trash') {
-        $base     = $trashDir;
-        $userPath = isset($segments[1]) ? implode('/', array_slice($segments, 1)) : '';
-    } else {
-        $base     = $dataDir;
-        $userPath = $rawPath;
-    }
-
-    $target = resolveSafePath($base, $userPath);
-
-    if (!is_dir($target) || !is_readable($target)) {
-        throw new RuntimeException('Specified path is not a readable directory.');
-    }
-
-    $items = getDirectoryStructure($target);
-    $list  = array_map(fn($item) => [
-        'type' => $item->type->value,
-        'name' => $item->name,
-    ], $items);
-
-    sendJson(['status' => 'success', 'list' => $list], 200);
-} catch (DirectoryException $e) {
-    sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
-} catch (RuntimeException $e) {
-    sendJson(['status' => 'error', 'message' => $e->getMessage()], 400);
-} catch (JsonException $e) {
-    error_log('JSON encoding error: ' . $e->getMessage());
-    sendJson(['status' => 'error', 'message' => 'Failed to encode JSON response.'], 500);
-} catch (Throwable $e) {
-    error_log('Unexpected error: ' . $e->getMessage());
-    sendJson(['status' => 'error', 'message' => 'An unexpected error occurred.'], 500);
-}
+(new ListHandler())->handle();

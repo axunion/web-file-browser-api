@@ -1,114 +1,110 @@
-# Web File Browser API - AI Coding Instructions
+# Web File Browser API - Development Guidelines
 
-## Architecture Overview
+## Core Principles
 
-PHP-based REST API for file management with security-first design using a **dual-path architecture**:
+### 1. Security First
+- **Never trust user input**: All external data must be validated and sanitized
+- **Principle of least privilege**: Operations are sandboxed to specific directories
+- **Defense in depth**: Multiple layers of validation (path resolution, filename validation, MIME type checking)
+- **Fail securely**: Invalid operations must fail explicitly with clear error messages
 
-- **`public/web-file-browser-api/`** - HTTP endpoints (`list/`, `upload/`, `rename/`, `upload-images/`)
-- **`src/web-file-browser-api/`** - Core business logic (utilities, validation, processing)
+### 2. Separation of Concerns
+- **Single Responsibility Principle**: Each class handles one aspect of functionality
+- **Abstract common patterns**: Shared behavior lives in base classes or utility classes
+- **Dependency injection**: Classes receive dependencies rather than creating them
+- **Clear boundaries**: HTTP handling, business logic, and file system operations are separated
 
-All operations are sandboxed within `public/data/` (active files) and `public/trash/` (deleted items).
+### 3. Code Quality Standards
+- **Type safety**: Use strict types and explicit return type declarations
+- **Immutability where possible**: Prefer readonly properties and avoid state mutation
+- **Fail fast**: Validate inputs early and throw exceptions for invalid states
+- **Consistent conventions**: Follow PSR-12 coding standards throughout the codebase
 
-## Code Style (PSR-12)
+## Architecture Patterns
 
-- PHP 8.1+ with strict types: `declare(strict_types=1);`
+### Request-Response Cycle
+- All HTTP endpoints extend a common base handler
+- Input validation happens before business logic
+- Consistent JSON response format across all endpoints
+- HTTP status codes reflect operation outcomes accurately
+
+### Error Handling
+- Use custom exceptions for domain-specific errors
+- Catch and handle exceptions at the appropriate level
+- Log security-relevant events
+- Never expose internal implementation details in error messages
+
+### File System Operations
+- All paths must be resolved through security utilities before use
+- Use atomic operations where possible
+- Handle cross-device operations gracefully
+- Clean up resources properly (file handles, temporary files)
+
+## Security Guidelines
+
+### Path Security
+- Resolve all user-provided paths to absolute paths within allowed boundaries
+- Prevent directory traversal attacks through canonicalization
+- Reject suspicious patterns (null bytes, excessive separators)
+- Validate that resolved paths stay within sandbox boundaries
+
+### File Validation
+- Validate filenames against length limits and character restrictions
+- Check for platform-specific reserved names
+- Verify MIME types using file content inspection, not extensions
+- Use sequential naming to prevent overwrite conflicts
+
+### Upload Security
+- Verify files are actually uploaded (use PHP upload functions)
+- Enforce size limits per file and per request
+- Whitelist allowed MIME types
+- Move uploaded files atomically to final destination
+
+## Development Practices
+
+### Code Style
 - Follow PSR-12 Extended Coding Style Guide
-- 4-space indentation (see `.editorconfig`)
-- Opening braces on same line: `function name(): void {`
-- Multi-line parameters: each on separate line, aligned
-- Control structures: space before parentheses `if ($condition) {`
-- UTF-8 throughout (filenames, JSON responses)
+- Use meaningful names that express intent
+- Keep functions small and focused
+- Comment only when code cannot be self-documenting
 
-```php
-function validateFileName(string $name): void {
-    // Implementation
-}
-```
+### Testing Philosophy
+- Write tests for security-critical functions
+- Test edge cases and error conditions
+- Use simple assertion-based tests without heavy frameworks
+- Tests should be executable directly via PHP CLI
 
-## Comments and Messages
+### Documentation
+- Code comments in English, essential information only
+- Error messages must be user-facing and actionable
+- Git commits in English, imperative mood, concise
+- Document "why" in comments, not "what" (code shows "what")
 
-- **Code comments**: English only, essential information only (no obvious comments)
-- **Error messages**: English, user-facing and consistent across all endpoints
-- **Git commits**: **MUST be in English**. Write concise, imperative mood descriptions (e.g., "Add file validation", "Fix path resolution bug"). Never use Japanese or other languages.
+## Extension Guidelines
 
-## Security Patterns (CRITICAL)
+### Adding New Endpoints
+- Extend the base request handler
+- Declare allowed HTTP methods explicitly
+- Use provided helper methods for input and path handling
+- Follow established response patterns
+- Implement proper error handling
 
-### 1. Path Resolution
-**Always** use `resolveSafePath()` to prevent directory traversal:
-```php
-$target = resolveSafePath($dataDir, $userPath);  // Never use user input directly
-```
+### Adding New Utilities
+- Ensure single responsibility
+- Make functions static when no state is needed
+- Use type hints for all parameters and return values
+- Throw exceptions for invalid inputs
+- Add corresponding tests
 
-### 2. File Validation
-**Every** file operation requires `validateFileName()`:
-```php
-validateFileName($fileName);  // Validates length, characters, Windows reserved names
-```
+### Modifying Security-Critical Code
+- Understand the threat model before making changes
+- Maintain backward compatibility for security validations
+- Add tests covering new edge cases
+- Document security implications in code review
 
-### 3. Sequential Naming
-Use `constructSequentialFilePath()` to prevent overwrites:
-```php
-$destPath = constructSequentialFilePath($target, $file['name']);  // auto-numbered if exists
-```
+## Communication Standards
 
-## API Response Pattern
-
-All endpoints use consistent JSON structure via `sendJson()`:
-```php
-function sendJson(array $payload, int $httpCode = 200): void {
-    http_response_code($httpCode);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-// Usage
-sendJson(['status' => 'success', 'data' => $result], 200);
-sendJson(['status' => 'error', 'message' => $error], 400);
-```
-
-## Core Utilities
-
-### Directory Structure (`get_directory_structure.php`)
-Returns `DirectoryItem[]` with `ItemType` enum:
-- Directories first, then files
-- Natural case-insensitive sort (`strnatcasecmp`)
-- Skips symlinks for security
-
-### File Operations (`move_file.php`, `rename_file.php`)
-Cross-device move support with automatic fallback to copy+unlink.
-
-
-## File Upload Constraints
-
-- **Standard upload (`upload/`)**: 100MB max, JPEG/PNG/PDF only
-- **Image batch upload (`upload-images/`)**: 10 files max, 10MB per file, 30MB total, JPEG/PNG only
-- MIME validation via `finfo`, uses `is_uploaded_file()` and `move_uploaded_file()`
-
-## Testing
-
-Simple assertion-based tests without external frameworks:
-```php
-assertEquals($expected, $actual, 'Test description');
-assertException(fn() => riskyOperation(), 'Should throw');
-```
-
-Run from project root:
-```bash
-php test/filepath_utils.test.php
-# Or all tests
-for test in test/*.test.php; do php "$test"; done
-```
-
-## Deployment
-
-GitHub Actions FTP deployment to separate server directories:
-- Manual trigger with dry-run option
-- Matrix strategy: deploys `src/` and `public/` to different paths
-- See `.github/workflows/deploy.yml`
-
-## Cross-Origin Configuration
-
-The `.htaccess` handles CORS, HTTPS redirects, and compression. All endpoints support cross-origin requests with:
-- `Access-Control-Allow-Origin: *`
-- `Access-Control-Allow-Methods: GET, POST, OPTIONS`
+- **Code comments**: English only, essential information
+- **Error messages**: English, user-facing, consistent
+- **Git commits**: English, imperative mood (e.g., "Add validation", "Fix bug")
+- **Documentation**: Clear, concise, principle-focused

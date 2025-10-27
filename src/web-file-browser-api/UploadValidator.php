@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/PathSecurity.php';
+require_once __DIR__ . '/Exceptions.php';
 
 /**
  * Validates uploaded files (MIME type, size, etc.).
@@ -29,7 +30,7 @@ final class UploadValidator
      *
      * @param array $file File array from $_FILES
      * @return void
-     * @throws RuntimeException If validation fails
+     * @throws ValidationException If validation fails
      */
     public function validate(array $file): void
     {
@@ -47,25 +48,25 @@ final class UploadValidator
      * @param int   $maxFiles   Maximum number of files allowed
      * @param int   $maxTotalSize Maximum total size allowed
      * @return void
-     * @throws RuntimeException If validation fails
+     * @throws ValidationException If validation fails
      */
     public function validateBatch(array $files, int $maxFiles, int $maxTotalSize): void
     {
         $count = count($files['name']);
 
         if ($count === 0) {
-            throw new RuntimeException('No files uploaded.');
+            throw new ValidationException('No files uploaded.');
         }
 
         if ($count > $maxFiles) {
-            throw new RuntimeException("Too many files. Maximum is {$maxFiles}.");
+            throw new ValidationException("Too many files. Maximum is {$maxFiles}.");
         }
 
         $totalSize = array_sum($files['size']);
 
         if ($totalSize > $maxTotalSize) {
             $limitMB = $maxTotalSize / (1024 * 1024);
-            throw new RuntimeException("Total upload size exceeds {$limitMB} MB.");
+            throw new ValidationException("Total upload size exceeds {$limitMB} MB.");
         }
     }
 
@@ -97,14 +98,14 @@ final class UploadValidator
     {
         if ($errorCode !== UPLOAD_ERR_OK) {
             $message = self::UPLOAD_ERROR_MESSAGES[$errorCode] ?? 'Unknown upload error.';
-            throw new RuntimeException($message);
+            throw new ValidationException($message);
         }
     }
 
     private function checkIsUploaded(string $tmpName): void
     {
         if (!is_uploaded_file($tmpName)) {
-            throw new RuntimeException('Invalid uploaded file.');
+            throw new ValidationException('Invalid uploaded file.');
         }
     }
 
@@ -112,7 +113,7 @@ final class UploadValidator
     {
         if ($size > $this->maxFileSize) {
             $limitMB = $this->maxFileSize / (1024 * 1024);
-            throw new RuntimeException("File exceeds {$limitMB}MB limit.");
+            throw new ValidationException("File exceeds {$limitMB}MB limit.");
         }
     }
 
@@ -122,7 +123,7 @@ final class UploadValidator
         $mime = $finfo->file($tmpName);
 
         if (!in_array($mime, $this->allowedMimeTypes, true)) {
-            throw new RuntimeException('File type not allowed.');
+            throw new ValidationException('File type not allowed.');
         }
     }
 }

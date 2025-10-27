@@ -12,7 +12,7 @@ final class ListHandler extends RequestHandler
     protected function process(): void
     {
         $rawPath = $this->getInput(INPUT_GET, 'path', '');
-        $target = $this->resolvePath($rawPath, allowTrash: true);
+        $target = $this->resolvePathWithTrash($rawPath);
 
         if (!is_dir($target) || !is_readable($target)) {
             throw new RuntimeException('Specified path is not a readable directory.');

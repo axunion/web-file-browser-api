@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/Exceptions.php';
+
 /**
  * Handles all path resolution, validation, and sequential naming.
  */
@@ -13,14 +15,14 @@ final class PathSecurity
      * @param string $baseDir  Absolute path to the base directory.
      * @param string $userPath Relative path provided by the user.
      * @return string          The safely resolved path (may not exist yet).
-     * @throws RuntimeException If the base is invalid or the resolved parent escapes the base.
+     * @throws PathException If the base is invalid or the resolved parent escapes the base.
      */
     public static function resolveSafePath(string $baseDir, string $userPath): string
     {
         $realBase = realpath($baseDir);
 
         if ($realBase === false || !is_dir($realBase)) {
-            throw new RuntimeException('Invalid base directory.');
+            throw new PathException('Invalid base directory.');
         }
 
         if ($userPath === '' || $userPath === '.' || $userPath === './') {
@@ -32,11 +34,11 @@ final class PathSecurity
         $realParent = realpath($parentDir);
 
         if ($realParent === false) {
-            throw new RuntimeException('Parent directory does not exist.');
+            throw new PathException('Parent directory does not exist.');
         }
 
         if (strncmp($realParent . DIRECTORY_SEPARATOR, $realBase . DIRECTORY_SEPARATOR, strlen($realBase) + 1) !== 0) {
-            throw new RuntimeException('Attempt to escape base directory.');
+            throw new PathException('Attempt to escape base directory.');
         }
 
         return $combined;
@@ -47,7 +49,7 @@ final class PathSecurity
      *
      * @param string $fileName The file name to validate.
      * @return void
-     * @throws RuntimeException If the file name is invalid.
+     * @throws ValidationException If the file name is invalid.
      */
     public static function validateFileName(string $fileName): void
     {
@@ -56,25 +58,25 @@ final class PathSecurity
         }
 
         if ($fileName === '') {
-            throw new RuntimeException("The file name cannot be empty.");
+            throw new ValidationException("The file name cannot be empty.");
         }
 
         if (mb_strlen($fileName, 'UTF-8') > 255) {
-            throw new RuntimeException("The file name exceeds the maximum length of 255 characters.");
+            throw new ValidationException("The file name exceeds the maximum length of 255 characters.");
         }
 
         if (preg_match('/[<>:"\/\\\\|\?\*\x00-\x1F]/u', $fileName)) {
-            throw new RuntimeException("The file name contains invalid characters.");
+            throw new ValidationException("The file name contains invalid characters.");
         }
 
         $upper = strtoupper(pathinfo($fileName, PATHINFO_FILENAME));
 
         if (preg_match('/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/', $upper)) {
-            throw new RuntimeException("The file name '{$fileName}' is a reserved name on Windows.");
+            throw new ValidationException("The file name '{$fileName}' is a reserved name on Windows.");
         }
 
         if (preg_match('/[\. ]$/', $fileName)) {
-            throw new RuntimeException("The file name must not end with a space or dot.");
+            throw new ValidationException("The file name must not end with a space or dot.");
         }
     }
 
@@ -84,14 +86,14 @@ final class PathSecurity
      * @param string $directoryPath Absolute path to the target directory.
      * @param string $filename      Desired filename (with or without extension).
      * @return string               Unique file path within the directory.
-     * @throws RuntimeException     If the directory is invalid or not writable.
+     * @throws PathException        If the directory is invalid or not writable.
      */
     public static function constructSequentialFilePath(string $directoryPath, string $filename): string
     {
         $realDir = realpath($directoryPath);
 
         if ($realDir === false || !is_dir($realDir) || !is_writable($realDir)) {
-            throw new RuntimeException("Invalid or unwritable directory: {$directoryPath}");
+            throw new PathException("Invalid or unwritable directory: {$directoryPath}");
         }
 
         $realDir = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;

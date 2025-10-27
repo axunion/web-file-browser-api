@@ -4,10 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/RequestHandler.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/UploadValidator.php';
-
-const MAX_FILES       = 10;
-const MAX_FILE_SIZE   = 10 * 1024 * 1024;
-const MAX_TOTAL_SIZE  = 30 * 1024 * 1024;
+require_once __DIR__ . '/../../../src/web-file-browser-api/Config.php';
 
 final class UploadImagesHandler extends RequestHandler
 {
@@ -21,20 +18,14 @@ final class UploadImagesHandler extends RequestHandler
 
         $files = $_FILES['images'];
         $validator = new UploadValidator(
-            allowedMimeTypes: ['image/jpeg', 'image/png'],
-            maxFileSize: MAX_FILE_SIZE
+            allowedMimeTypes: Config::BATCH_UPLOAD_ALLOWED_TYPES,
+            maxFileSize: Config::BATCH_FILE_MAX_SIZE
         );
 
-        $validator->validateBatch($files, MAX_FILES, MAX_TOTAL_SIZE);
+        $validator->validateBatch($files, Config::BATCH_MAX_FILES, Config::BATCH_MAX_TOTAL_SIZE);
 
         $subPath   = $this->getInput(INPUT_POST, 'path', '');
         $targetDir = $this->resolvePath($subPath);
-
-        if (!file_exists($targetDir)) {
-            if (!mkdir($targetDir, 0755, true) && !is_dir($targetDir)) {
-                throw new RuntimeException("Failed to create directory: {$targetDir}");
-            }
-        }
 
         if (!is_dir($targetDir) || !is_writable($targetDir)) {
             throw new RuntimeException('Target path is not a writable directory.');

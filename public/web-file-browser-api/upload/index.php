@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../../src/web-file-browser-api/RequestHandler.php';
 require_once __DIR__ . '/../../../src/web-file-browser-api/UploadValidator.php';
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+require_once __DIR__ . '/../../../src/web-file-browser-api/Config.php';
 
 final class UploadHandler extends RequestHandler
 {
@@ -18,8 +17,8 @@ final class UploadHandler extends RequestHandler
         }
 
         $validator = new UploadValidator(
-            allowedMimeTypes: ['image/jpeg', 'image/png', 'application/pdf'],
-            maxFileSize: MAX_FILE_SIZE
+            allowedMimeTypes: Config::SINGLE_UPLOAD_ALLOWED_TYPES,
+            maxFileSize: Config::SINGLE_FILE_MAX_SIZE
         );
 
         $subPath = $this->getInput(INPUT_POST, 'path', '');

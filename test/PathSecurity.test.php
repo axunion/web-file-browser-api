@@ -2,56 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TestHelpers.php';
 require_once __DIR__ . '/../src/web-file-browser-api/PathSecurity.php';
-
-/**
- * Simple assertion for equality.
- */
-function assertEquals($expected, $actual, string $message = ''): void
-{
-    if ($expected !== $actual) {
-        echo "FAIL: $message - Expected '" . $expected . "', got '" . $actual . "'\n";
-        exit(1);
-    }
-    echo "PASS: $message\n";
-}
-
-/**
- * Assert that the callable throws a RuntimeException.
- */
-function assertException(callable $fn, string $message = ''): void
-{
-    try {
-        $fn();
-        echo "FAIL: $message - No exception thrown\n";
-        exit(1);
-    } catch (RuntimeException $e) {
-        echo "PASS: $message - Caught exception: {$e->getMessage()}\n";
-    }
-}
-
-/**
- * Recursively delete a directory and its contents.
- */
-function rrmdir(string $dirPath): void
-{
-    if (!is_dir($dirPath)) {
-        return;
-    }
-    $items = scandir($dirPath);
-    foreach ($items as $item) {
-        if ($item === '.' || $item === '..') {
-            continue;
-        }
-        $path = $dirPath . DIRECTORY_SEPARATOR . $item;
-        if (is_dir($path)) {
-            rrmdir($path);
-        } else {
-            @unlink($path);
-        }
-    }
-    @rmdir($dirPath);
-}
 
 // ---------- PathSecurity::resolveSafePath Tests ----------
 

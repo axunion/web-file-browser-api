@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/PathSecurity.php';
+require_once __DIR__ . '/Exceptions.php';
+require_once __DIR__ . '/Config.php';
 
 /**
  * Abstract base class for HTTP request handling.
@@ -28,15 +30,41 @@ abstract class RequestHandler
      */
     public function handle(): void
     {
+        $this->handleCors();
+
         try {
             $this->validateMethod();
             $this->process();
+        } catch (PathException | ValidationException | DirectoryException $e) {
+            error_log(static::class . ' error: ' . $e->getMessage());
+            $this->sendError($e->getMessage(), 400);
         } catch (RuntimeException $e) {
             error_log(static::class . ' error: ' . $e->getMessage());
             $this->sendError($e->getMessage(), 400);
         } catch (Throwable $e) {
             error_log('Unexpected error in ' . static::class . ': ' . $e->getMessage());
             $this->sendError('An unexpected error occurred.', 500);
+        }
+    }
+
+    /**
+     * Handle CORS (Cross-Origin Resource Sharing) if enabled.
+     */
+    private function handleCors(): void
+    {
+        if (!Config::ENABLE_CORS) {
+            return;
+        }
+
+        header('Access-Control-Allow-Origin: ' . Config::CORS_ALLOWED_ORIGIN);
+        header('Access-Control-Allow-Methods: ' . Config::CORS_ALLOWED_METHODS);
+        header('Access-Control-Allow-Headers: ' . Config::CORS_ALLOWED_HEADERS);
+        header('Access-Control-Max-Age: ' . Config::CORS_MAX_AGE);
+
+        // Handle preflight OPTIONS request
+        if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            http_response_code(204);
+            exit;
         }
     }
 
@@ -57,18 +85,29 @@ abstract class RequestHandler
     }
 
     /**
-     * Resolve user path safely, with optional trash support.
+     * Resolve user path safely within the data directory.
      */
-    protected function resolvePath(string $userPath, bool $allowTrash = false): string
+    protected function resolvePath(string $userPath): string
     {
-        if ($allowTrash) {
-            $segments = explode('/', trim($userPath, '/'));
-            if (isset($segments[0]) && $segments[0] === 'trash') {
-                $base = $this->trashDir;
-                $path = isset($segments[1]) ? implode('/', array_slice($segments, 1)) : '';
-                return PathSecurity::resolveSafePath($base, $path);
-            }
+        return PathSecurity::resolveSafePath($this->dataDir, $userPath);
+    }
+
+    /**
+     * Resolve user path safely, allowing access to both data and trash directories.
+     *
+     * If the path starts with "trash/", it resolves to the trash directory.
+     * Otherwise, it resolves to the data directory.
+     */
+    protected function resolvePathWithTrash(string $userPath): string
+    {
+        $segments = explode('/', trim($userPath, '/'));
+
+        if (isset($segments[0]) && $segments[0] === 'trash') {
+            $base = $this->trashDir;
+            $path = isset($segments[1]) ? implode('/', array_slice($segments, 1)) : '';
+            return PathSecurity::resolveSafePath($base, $path);
         }
+
         return PathSecurity::resolveSafePath($this->dataDir, $userPath);
     }
 

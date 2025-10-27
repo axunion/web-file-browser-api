@@ -2,47 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TestHelpers.php';
 require_once __DIR__ . '/../src/web-file-browser-api/FileOperations.php';
-
-/**
- * Assert that two values are equal.
- */
-function assertEquals($expected, $actual, string $message = ''): void
-{
-    if ($expected !== $actual) {
-        echo "FAIL: $message - Expected '" . var_export($expected, true) . "', got '" . var_export($actual, true) . "'\n";
-        exit(1);
-    }
-    echo "PASS: $message\n";
-}
-
-/**
- * Assert that a callable throws RuntimeException.
- */
-function assertException(callable $fn, string $message = ''): void
-{
-    try {
-        $fn();
-        echo "FAIL: $message - No exception thrown\n";
-        exit(1);
-    } catch (RuntimeException $e) {
-        echo "PASS: $message - Caught exception: {$e->getMessage()}\n";
-    }
-}
-
-/**
- * Cleanup helper.
- */
-function rrmdir(string $dir): void
-{
-    if (!is_dir($dir)) return;
-    foreach (scandir($dir) as $item) {
-        if ($item === '.' || $item === '..') continue;
-        $path = $dir . DIRECTORY_SEPARATOR . $item;
-        is_dir($path) ? rrmdir($path) : unlink($path);
-    }
-    rmdir($dir);
-}
 
 // ---------- FileOperations::move Tests ----------
 

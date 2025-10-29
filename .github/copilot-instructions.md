@@ -73,6 +73,14 @@
 - Test edge cases and error conditions
 - Use simple assertion-based tests without heavy frameworks
 - Tests should be executable directly via PHP CLI
+- Maintain both unit tests (core classes) and API tests (HTTP endpoints)
+
+### Test Structure
+- **Unit tests** (`test/`): Test individual classes and functions in isolation
+- **API tests** (`test-api/`): Test HTTP endpoints via actual requests in Docker
+- Unit tests run anywhere PHP is available
+- API tests require Docker environment and test real HTTP behavior
+- API tests automatically manage server lifecycle
 
 ### Documentation
 - Code comments in English, essential information only
@@ -96,6 +104,14 @@
 - Throw exceptions for invalid inputs
 - Add corresponding tests
 
+### Adding New Tests
+- **Unit tests**: Place in `test/` directory, name as `ClassName.test.php`
+- **API tests**: Place in `test-api/` directory, name as `endpoint-name.test.php`
+- Use `ApiTestHelpers` for HTTP requests in API tests
+- Verify both success and error cases
+- Test security validations (path traversal, invalid inputs)
+- Clean up test files and data after each test
+
 ### Modifying Security-Critical Code
 - Understand the threat model before making changes
 - Maintain backward compatibility for security validations
@@ -108,3 +124,12 @@
 - **Error messages**: English, user-facing, consistent
 - **Git commits**: English, imperative mood (e.g., "Add validation", "Fix bug")
 - **Documentation**: Clear, concise, principle-focused
+
+## Docker Environment
+
+This project is designed to work with Docker:
+- Use Docker alias: `docker run --rm -it -v $PWD:/app -w /app php:8.4-apache php`
+- API tests run within Docker containers
+- Test runner manages server lifecycle automatically
+- HTTPS redirect disabled during tests via `TESTING=true` environment variable
+- Use `127.0.0.1` instead of `localhost` for container networking

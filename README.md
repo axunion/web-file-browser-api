@@ -48,9 +48,12 @@ Parameters: `path`, `images[]` | Limits: 10 files, 30MB total, JPEG/PNG only
 # Unit tests (core classes)
 php test/run-all.php
 
-# API tests (HTTP endpoints, requires Docker)
-php test-api/run-all.php
+# API tests (HTTP endpoints)
+php test-api/run-all.php              # Run all API tests
+php test-api/upload-images.test.php   # Run individual test (auto-starts server)
 ```
+
+**Note**: API tests automatically start/stop a PHP built-in server. Individual tests can be run standalone without manually starting a server.
 
 ### Adding New Endpoints
 

@@ -20,6 +20,13 @@ final class ApiTestHelpers
      */
     private static array $tempFiles = [];
 
+    /**
+     * Keep track of uploaded files to API endpoints for cleanup
+     *
+     * @var string[]
+     */
+    private static array $uploadedFiles = [];
+
     // Ensure shutdown handler is registered once
     private static bool $shutdownRegistered = false;
 
@@ -27,7 +34,7 @@ final class ApiTestHelpers
     private static int $defaultTimeout = 5;
 
     // Initialize configurable defaults
-    public static function __init(): void
+    private static function ensureInitialized(): void
     {
         if (isset(self::$baseUrl)) {
             return;
@@ -42,7 +49,7 @@ final class ApiTestHelpers
      */
     public static function get(string $endpoint, array $params = []): array
     {
-        self::__init();
+        self::ensureInitialized();
         $url = self::$baseUrl . $endpoint;
         if (!empty($params)) {
             $url .= '?' . http_build_query($params);
@@ -81,7 +88,7 @@ final class ApiTestHelpers
      */
     public static function post(string $endpoint, array $data = []): array
     {
-        self::__init();
+        self::ensureInitialized();
         $url = self::$baseUrl . $endpoint;
 
         $ch = curl_init($url);
@@ -120,7 +127,7 @@ final class ApiTestHelpers
      */
     public static function postMultipart(string $endpoint, array $fields = [], array $files = []): array
     {
-        self::__init();
+        self::ensureInitialized();
         $url = self::$baseUrl . $endpoint;
         $postData = $fields;
 
@@ -344,25 +351,62 @@ final class ApiTestHelpers
             self::$tempFiles[] = $path;
             // Register shutdown handler lazily when first temp file is added
             if (!self::$shutdownRegistered) {
-                register_shutdown_function([self::class, 'cleanupTempFiles']);
+                register_shutdown_function([self::class, 'cleanupAll']);
                 self::$shutdownRegistered = true;
             }
         }
     }
 
     /**
-     * Remove all registered temp files. Safe to call multiple times.
+     * Register an uploaded file for cleanup
+     *
+     * @param string $dataDir Base data directory (e.g., __DIR__ . '/../public/data')
+     * @param string $filename Filename or relative path within data directory
      */
-    public static function cleanupTempFiles(): void
+    public static function registerUploadedFile(string $dataDir, string $filename): void
     {
+        $fullPath = rtrim($dataDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
+        if (!in_array($fullPath, self::$uploadedFiles, true)) {
+            self::$uploadedFiles[] = $fullPath;
+            // Register shutdown handler lazily
+            if (!self::$shutdownRegistered) {
+                register_shutdown_function([self::class, 'cleanupAll']);
+                self::$shutdownRegistered = true;
+            }
+        }
+    }
+
+    /**
+     * Remove all registered temp and uploaded files. Safe to call multiple times.
+     */
+    public static function cleanupAll(): void
+    {
+        // Clean temp files
         foreach (self::$tempFiles as $file) {
             if (is_file($file)) {
                 @unlink($file);
             }
         }
 
-        // Reset the list so repeated calls do nothing
+        // Clean uploaded files
+        foreach (self::$uploadedFiles as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
+        }
+
+        // Reset the lists
         self::$tempFiles = [];
+        self::$uploadedFiles = [];
+    }
+
+    /**
+     * Remove all registered temp files. Safe to call multiple times.
+     * @deprecated Use cleanupAll() instead
+     */
+    public static function cleanupTempFiles(): void
+    {
+        self::cleanupAll();
     }
 
     /**

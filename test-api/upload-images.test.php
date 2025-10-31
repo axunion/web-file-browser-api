@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/TestSetup.php';
 require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
@@ -30,10 +31,14 @@ ApiTestHelpers::assertArrayHasKey('files', $response['json'], 'Response has file
 $uploadedFiles = $response['json']['files'];
 ApiTestHelpers::assertEquals(3, count($uploadedFiles), '3 files uploaded');
 
+// Register uploaded files for cleanup
+foreach ($uploadedFiles as $file) {
+    ApiTestHelpers::registerUploadedFile(DATA_DIR, $file);
+}
+
 // Verify all files exist
 foreach ($uploadedFiles as $file) {
     assert(file_exists(DATA_DIR . '/' . $file), "Uploaded file $file exists");
-    unlink(DATA_DIR . '/' . $file); // Cleanup
 }
 
 unlink($img1);
@@ -56,10 +61,14 @@ ApiTestHelpers::assertSuccess($response, 'Upload to subdirectory');
 $uploadedFiles = $response['json']['files'];
 ApiTestHelpers::assertEquals(2, count($uploadedFiles), '2 files uploaded');
 
+// Register uploaded files for cleanup
+foreach ($uploadedFiles as $file) {
+    ApiTestHelpers::registerUploadedFile(DATA_DIR . '/directory', $file);
+}
+
 // Verify files in subdirectory
 foreach ($uploadedFiles as $file) {
     assert(file_exists(DATA_DIR . '/directory/' . $file), "File $file exists in subdirectory");
-    unlink(DATA_DIR . '/directory/' . $file); // Cleanup
 }
 
 unlink($img1);
@@ -79,7 +88,7 @@ $response = ApiTestHelpers::postMultipart(
 ApiTestHelpers::assertSuccess($response, 'Upload single image');
 $uploadedFiles = $response['json']['files'];
 ApiTestHelpers::assertEquals(1, count($uploadedFiles), '1 file uploaded');
-unlink(DATA_DIR . '/' . $uploadedFiles[0]); // Cleanup
+ApiTestHelpers::registerUploadedFile(DATA_DIR, $uploadedFiles[0]);
 unlink($img1);
 echo "OK\n";
 
@@ -94,6 +103,9 @@ echo "  - Reject non-image file... ";
 $txtFile = ApiTestHelpers::createTempFile('Not an image', 'txt');
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
+// Get list of files before the test
+$filesBefore = glob(DATA_DIR . '/api_test_*.{jpg,png}', GLOB_BRACE) ?: [];
+
 $response = ApiTestHelpers::postMultipart(
     '/web-file-browser-api/upload-images/',
     ['path' => ''],
@@ -102,6 +114,15 @@ $response = ApiTestHelpers::postMultipart(
 
 // Should reject the entire batch if one file is invalid
 ApiTestHelpers::assertError($response, 400, 'Non-image file rejected');
+
+// Clean up any files that were uploaded before the error occurred
+// (Workaround for endpoint bug where partial uploads aren't rolled back)
+$filesAfter = glob(DATA_DIR . '/api_test_*.{jpg,png}', GLOB_BRACE) ?: [];
+$newFiles = array_diff($filesAfter, $filesBefore);
+foreach ($newFiles as $file) {
+    @unlink($file);
+}
+
 unlink($txtFile);
 unlink($img1);
 echo "OK\n";
@@ -154,6 +175,7 @@ $response1 = ApiTestHelpers::postMultipart(
 );
 ApiTestHelpers::assertSuccess($response1);
 $file1 = $response1['json']['files'][0];
+ApiTestHelpers::registerUploadedFile(DATA_DIR, $file1);
 
 // Second upload with same filename
 $response2 = ApiTestHelpers::postMultipart(
@@ -163,15 +185,14 @@ $response2 = ApiTestHelpers::postMultipart(
 );
 ApiTestHelpers::assertSuccess($response2);
 $file2 = $response2['json']['files'][0];
+ApiTestHelpers::registerUploadedFile(DATA_DIR, $file2);
 
 // Files should have different names
 assert($file1 !== $file2, 'Conflicting filenames are made unique');
 
-// Cleanup
+// Cleanup temp files
 unlink($img1);
 unlink($img2);
-unlink(DATA_DIR . '/' . $file1);
-unlink(DATA_DIR . '/' . $file2);
 echo "OK\n";
 
 // Test 9: Mixed JPEG and PNG
@@ -190,10 +211,11 @@ ApiTestHelpers::assertSuccess($response, 'Mixed formats uploaded');
 $uploadedFiles = $response['json']['files'];
 ApiTestHelpers::assertEquals(3, count($uploadedFiles), '3 files uploaded');
 
-// Cleanup
+// Register uploaded files for cleanup
 foreach ($uploadedFiles as $file) {
-    unlink(DATA_DIR . '/' . $file);
+    ApiTestHelpers::registerUploadedFile(DATA_DIR, $file);
 }
+
 unlink($jpeg1);
 unlink($png1);
 unlink($jpeg2);

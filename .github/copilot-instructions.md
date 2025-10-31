@@ -106,14 +106,19 @@ Edit `src/web-file-browser-api/Config.php` for:
 ### Testing
 - **Unit tests** (`test/`): Test individual classes in isolation
 - **API tests** (`test-api/`): Test HTTP endpoints via actual requests
+  - Can be run individually or via `run-all.php`
+  - Server is automatically started/stopped by `TestSetup.php`
+  - Individual tests: `php test-api/list.test.php` (no manual server setup needed)
+  - All tests: `php test-api/run-all.php`
 - Write tests for security-critical functions
 - Test edge cases and error conditions
 - Use simple assertions without heavy frameworks
 
 Run tests:
 ```bash
-php test/run-all.php           # Unit tests
-php test-api/run-all.php       # API tests (requires Docker)
+php test/run-all.php                  # Unit tests
+php test-api/run-all.php              # All API tests
+php test-api/upload-images.test.php   # Individual API test
 ```
 
 ### Adding New Endpoints
@@ -141,9 +146,42 @@ php test-api/run-all.php       # API tests (requires Docker)
 
 **API tests**:
 - Place in `test-api/` directory, name as `endpoint-name.test.php`
+- Include `TestSetup.php` first for automatic server management
 - Use `ApiTestHelpers` for HTTP requests
 - Test both success and error cases
 - Test security validations (path traversal, invalid inputs)
+- Clean up uploaded files using `ApiTestHelpers::registerUploadedFile()`
+
+**Example API test structure**:
+```php
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/TestSetup.php';      // Auto-starts server for standalone run
+require_once __DIR__ . '/ApiTestHelpers.php';
+
+echo "Testing endpoint...\n";
+
+const DATA_DIR = __DIR__ . '/../public/data';
+
+// Test case
+$response = ApiTestHelpers::post('/endpoint/', ['param' => 'value']);
+ApiTestHelpers::assertSuccess($response);
+
+// Register uploaded files for cleanup
+if (isset($response['json']['files'])) {
+    foreach ($response['json']['files'] as $file) {
+        ApiTestHelpers::registerUploadedFile(DATA_DIR, $file);
+    }
+}
+
+echo "All tests passed!\n";
+```
+
+**Test cleanup best practices**:
+- Uploaded files: Use `ApiTestHelpers::registerUploadedFile()` to auto-cleanup on shutdown
+- Temp files: Use `ApiTestHelpers::createTempFile()` which auto-registers cleanup
+- Partial uploads on error: Check for new files after error assertions and clean manually
 
 ## Git Workflow
 
@@ -153,8 +191,7 @@ php test-api/run-all.php       # API tests (requires Docker)
 
 ## Docker Environment
 
-API tests run within Docker containers:
-- Test runner manages server lifecycle automatically
+API tests can run both natively and within Docker containers:
+- `TestSetup.php` automatically manages PHP built-in server lifecycle
 - HTTPS redirect disabled during tests via `TESTING=true` environment variable
-- Use `127.0.0.1` for container networking
-- Requires `php:8.4-apache` Docker image
+- Use `127.0.0.1` for server networking

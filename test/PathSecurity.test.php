@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+define('TESTING_MODE', true);
+
 require_once __DIR__ . '/TestHelpers.php';
-require_once __DIR__ . '/../src/web-file-browser-api/PathSecurity.php';
+require_once __DIR__ . '/../src/web-file-browser-api/bootstrap.php';
 
 // ---------- PathSecurity::resolveSafePath Tests ----------
 

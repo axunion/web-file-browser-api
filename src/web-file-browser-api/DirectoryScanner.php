@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/Exceptions.php';
-
 enum ItemType: string
 {
     case FILE = 'file';

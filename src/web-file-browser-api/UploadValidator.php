@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/PathSecurity.php';
-require_once __DIR__ . '/Exceptions.php';
-
 /**
  * Validates uploaded files (MIME type, size, etc.).
  */

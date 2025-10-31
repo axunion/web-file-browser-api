@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/PathSecurity.php';
-
 /**
  * Handles file movement and renaming operations.
  */

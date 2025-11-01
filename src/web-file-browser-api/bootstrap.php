@@ -18,16 +18,49 @@ require_once __DIR__ . '/UploadValidator.php';
 
 // Initialize base directories (only if not in test mode)
 if (!defined('API_DATA_DIR')) {
-    define('API_DATA_DIR', realpath(__DIR__ . '/../../public/data'));
+    $dataDir = __DIR__ . '/../../public/data';
+    $dataDirResolved = realpath($dataDir);
+
+    // Create data directory if it doesn't exist
+    if ($dataDirResolved === false && !defined('TESTING_MODE')) {
+        if (!is_dir($dataDir)) {
+            @mkdir($dataDir, 0755, true);
+            $dataDirResolved = realpath($dataDir);
+        }
+    }
+
+    define('API_DATA_DIR', $dataDirResolved);
 }
 
 if (!defined('API_TRASH_DIR')) {
-    define('API_TRASH_DIR', realpath(__DIR__ . '/../../public/trash'));
+    $trashDir = __DIR__ . '/../../public/trash';
+    $trashDirResolved = realpath($trashDir);
+
+    // Create trash directory if it doesn't exist
+    if ($trashDirResolved === false && !defined('TESTING_MODE')) {
+        if (!is_dir($trashDir)) {
+            @mkdir($trashDir, 0755, true);
+            $trashDirResolved = realpath($trashDir);
+        }
+    }
+
+    define('API_TRASH_DIR', $trashDirResolved);
 }
 
 // Check directory configuration (skip in test mode)
 if (!defined('TESTING_MODE')) {
-    if (API_DATA_DIR === false || API_TRASH_DIR === false) {
+    $errors = [];
+
+    if (API_DATA_DIR === false) {
+        $errors[] = 'Data directory not found or not accessible: ' . (__DIR__ . '/../../public/data');
+    }
+
+    if (API_TRASH_DIR === false) {
+        $errors[] = 'Trash directory not found or not accessible: ' . (__DIR__ . '/../../public/trash');
+    }
+
+    if (!empty($errors)) {
+        error_log('API configuration error: ' . implode(', ', $errors));
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(['status' => 'error', 'message' => 'Server configuration error.']);

@@ -28,6 +28,8 @@ All endpoints include `bootstrap.php` which provides:
 - Helper functions (validateMethod, resolvePath, sendSuccess, sendError, handleError)
 - CORS handling (when enabled in Config.php)
 
+Note: At startup the bootstrap will search upward from the executing script (a few levels) for a directory containing `data` or `trash` and use that as the web root. When found it defines `API_DATA_DIR` and `API_TRASH_DIR`. Endpoints must only `require_once` the bootstrap and must not redefine those constants. For uncommon layouts, use an environment variable or adjust `Config.php`.
+
 ### Endpoint Structure
 Endpoints use procedural style for clarity:
 

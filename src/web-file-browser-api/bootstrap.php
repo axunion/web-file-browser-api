@@ -17,11 +17,43 @@ require_once __DIR__ . '/FileOperations.php';
 require_once __DIR__ . '/UploadValidator.php';
 
 // Initialize base directories (only if not in test mode)
-if (!defined('API_DATA_DIR')) {
-    $dataDir = __DIR__ . '/../../public/data';
-    $dataDirResolved = realpath($dataDir);
+if (!defined('API_DATA_DIR') || !defined('API_TRASH_DIR')) {
+    // Try to discover the public root by walking up from the executing script.
+    // We look for a directory that contains at least one of 'data' or 'trash'.
+    $publicRoot = null;
 
-    // Create data directory if it doesn't exist
+    if (isset($_SERVER['SCRIPT_FILENAME']) && is_string($_SERVER['SCRIPT_FILENAME'])) {
+        $scriptPath = $_SERVER['SCRIPT_FILENAME'];
+        $current = dirname($scriptPath);
+
+        // Walk up to 6 levels to find candidate containing data/trash
+        for ($i = 0; $i < 6; $i++) {
+            if ($current === '' || $current === '/' || $current === '.') {
+                break;
+            }
+
+            if (is_dir($current . '/data') || is_dir($current . '/trash')) {
+                $publicRoot = realpath($current) ?: $current;
+                break;
+            }
+
+            $parent = dirname($current);
+            if ($parent === $current) {
+                break;
+            }
+            $current = $parent;
+        }
+    }
+
+    // Fallback to previous layout if discovery failed
+    if ($publicRoot === null) {
+        $publicRoot = realpath(__DIR__ . '/../../public') ?: __DIR__ . '/../../public';
+    }
+
+    $dataDir = $publicRoot . '/data';
+    $trashDir = $publicRoot . '/trash';
+
+    $dataDirResolved = realpath($dataDir);
     if ($dataDirResolved === false && !defined('TESTING_MODE')) {
         if (!is_dir($dataDir)) {
             @mkdir($dataDir, 0755, true);
@@ -29,14 +61,7 @@ if (!defined('API_DATA_DIR')) {
         }
     }
 
-    define('API_DATA_DIR', $dataDirResolved);
-}
-
-if (!defined('API_TRASH_DIR')) {
-    $trashDir = __DIR__ . '/../../public/trash';
     $trashDirResolved = realpath($trashDir);
-
-    // Create trash directory if it doesn't exist
     if ($trashDirResolved === false && !defined('TESTING_MODE')) {
         if (!is_dir($trashDir)) {
             @mkdir($trashDir, 0755, true);
@@ -44,27 +69,33 @@ if (!defined('API_TRASH_DIR')) {
         }
     }
 
-    define('API_TRASH_DIR', $trashDirResolved);
-}
-
-// Check directory configuration (skip in test mode)
-if (!defined('TESTING_MODE')) {
-    $errors = [];
-
-    if (API_DATA_DIR === false) {
-        $errors[] = 'Data directory not found or not accessible: ' . (__DIR__ . '/../../public/data');
+    if (!defined('API_DATA_DIR')) {
+        define('API_DATA_DIR', $dataDirResolved);
     }
 
-    if (API_TRASH_DIR === false) {
-        $errors[] = 'Trash directory not found or not accessible: ' . (__DIR__ . '/../../public/trash');
+    if (!defined('API_TRASH_DIR')) {
+        define('API_TRASH_DIR', $trashDirResolved);
     }
 
-    if (!empty($errors)) {
-        error_log('API configuration error: ' . implode(', ', $errors));
-        http_response_code(500);
-        header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['status' => 'error', 'message' => 'Server configuration error.']);
-        exit;
+    // Check directory configuration (skip in test mode)
+    if (!defined('TESTING_MODE')) {
+        $errors = [];
+
+        if (API_DATA_DIR === false) {
+            $errors[] = 'Data directory not found or not accessible: ' . ($dataDir);
+        }
+
+        if (API_TRASH_DIR === false) {
+            $errors[] = 'Trash directory not found or not accessible: ' . ($trashDir);
+        }
+
+        if (!empty($errors)) {
+            error_log('API configuration error: ' . implode(', ', $errors));
+            http_response_code(500);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['status' => 'error', 'message' => 'Server configuration error.']);
+            exit;
+        }
     }
 }
 

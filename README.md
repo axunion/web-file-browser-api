@@ -16,6 +16,8 @@ A secure, lightweight PHP API for file management operations. Built with securit
 - Web server (Apache/Nginx)
 - Write permissions for `public/data/` and `public/trash/` directories
 
+Bootstrap behaviour: at runtime the bootstrap searches parent directories of the executing script for a `data` or `trash` directory and treats that parent as the web root. As long as `data` and `trash` exist under the web root, the physical name of the web folder (for example `public`) does not matter. For non-standard layouts, override via environment variables or `Config.php`.
+
 ## API Endpoints
 
 All endpoints return JSON with `status` field (`success` or `error`).
@@ -87,6 +89,8 @@ try {
 - `validateMethod(array $methods)` - Validate HTTP method
 - `resolvePath(string $path)` - Resolve path within data directory
 - `resolvePathWithTrash(string $path)` - Resolve path with trash support
+- Note: Endpoints should NOT attempt to hardcode or redefine `API_DATA_DIR` / `API_TRASH_DIR`.
+    The bootstrap will define these constants automatically by discovering the public root. If you need a non-standard layout, consider using an environment variable or updating `Config.php`.
 - `getInput(int $type, string $key, mixed $default)` - Get input safely
 - `sendSuccess(array $data, int $code)` - Send JSON success response
 - `sendError(string $message, int $code)` - Send JSON error response

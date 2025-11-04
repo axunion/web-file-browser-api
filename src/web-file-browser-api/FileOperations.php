@@ -56,12 +56,12 @@ final class FileOperations
     }
 
     /**
-     * Rename a file within a directory safely.
+     * Rename a file or directory within a parent directory safely.
      *
-     * @param string $directory   Path to the target directory.
-     * @param string $currentName Current filename.
-     * @param string $newName     Desired new filename.
-     * @return string             Absolute path of the renamed file.
+     * @param string $directory   Path to the parent directory.
+     * @param string $currentName Current name of the file or directory.
+     * @param string $newName     Desired new name for the file or directory.
+     * @return string             Absolute path of the renamed file or directory.
      * @throws RuntimeException   On validation or rename failure.
      */
     public static function rename(string $directory, string $currentName, string $newName): string
@@ -69,7 +69,7 @@ final class FileOperations
         $realDir = realpath($directory);
 
         if ($realDir === false || !is_dir($realDir) || !is_writable($realDir)) {
-            throw new RuntimeException("Target directory invalid or not writable: {$directory}");
+            throw new RuntimeException("Parent directory invalid or not writable: {$directory}");
         }
 
         $realDir = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
@@ -78,12 +78,12 @@ final class FileOperations
         $srcPath = $realDir . $currentName;
         $dstPath = $realDir . $newName;
 
-        if (!is_file($srcPath)) {
-            throw new RuntimeException("File not found: {$srcPath}");
+        if (!file_exists($srcPath)) {
+            throw new RuntimeException("File or directory not found: {$srcPath}");
         }
 
         if (file_exists($dstPath)) {
-            throw new RuntimeException("Cannot rename: target file already exists: {$newName}");
+            throw new RuntimeException("Cannot rename: target name already exists: {$newName}");
         }
 
         if (!@rename($srcPath, $dstPath)) {

@@ -6,7 +6,7 @@ A secure, lightweight PHP API for file management operations. Built with securit
 
 - 📁 **Directory Listing**: Browse directories with type-safe scanning
 - 📤 **File Upload**: Single and batch uploads with MIME type validation
-- ✏️ **File Rename**: Safe renaming with filename validation
+- ✏️ **File & Directory Rename**: Safe renaming with comprehensive validation
 - 🔒 **Security**: Path traversal prevention, input validation, sandboxed operations
 - 🧪 **Tested**: Comprehensive test suite for security-critical functions
 
@@ -32,10 +32,13 @@ Returns: `{"status": "success", "list": [{"name": "file.txt", "type": "file"}, .
 
 Parameters: `path`, `file` | Supports: JPEG, PNG, PDF (max 100MB)
 
-### Rename File
+### Rename File or Directory
 `POST /web-file-browser-api/rename/`
 
-Parameters: `path` (directory), `name` (current name), `newName`
+Parameters: 
+- `path` (parent directory path)
+- `name` (current name of file or directory)
+- `newName` (desired new name for file or directory)
 
 ### Batch Upload Images
 `POST /web-file-browser-api/upload-images/` (multipart/form-data)

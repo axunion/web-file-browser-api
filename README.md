@@ -22,29 +22,6 @@ Bootstrap behaviour: at runtime the bootstrap searches parent directories of the
 
 All endpoints return JSON with `status` field (`success` or `error`).
 
-### List Directory Contents
-`GET /web-file-browser-api/list/?path=subdirectory`
-
-Returns: `{"status": "success", "list": [{"name": "file.txt", "type": "file"}, ...]}`
-
-### Upload File
-`POST /web-file-browser-api/upload/` (multipart/form-data)
-
-Parameters: `path`, `file` | Supports: JPEG, PNG, PDF (max 100MB)
-
-### Rename File or Directory
-`POST /web-file-browser-api/rename/`
-
-Parameters: 
-- `path` (parent directory path)
-- `name` (current name of file or directory)
-- `newName` (desired new name for file or directory)
-
-### Batch Upload Images
-`POST /web-file-browser-api/upload-images/` (multipart/form-data)
-
-Parameters: `path`, `images[]` | Limits: 10 files, 30MB total, JPEG/PNG only
-
 ## Development
 
 ### Running Tests
@@ -59,45 +36,6 @@ php test-api/upload-images.test.php   # Run individual test (auto-starts server)
 ```
 
 **Note**: API tests automatically start/stop a PHP built-in server. Individual tests can be run standalone without manually starting a server.
-
-### Adding New Endpoints
-
-Create a new endpoint using the bootstrap file and helper functions:
-
-```php
-<?php
-declare(strict_types=1);
-
-require_once __DIR__ . '/../../../src/web-file-browser-api/bootstrap.php';
-
-validateMethod(['POST']);
-
-try {
-    // Get input parameters
-    $param = getInput(INPUT_POST, 'param', '');
-    
-    // Resolve and validate path
-    $path = resolvePath($param);
-    
-    // Your business logic here
-    // ...
-    
-    sendSuccess(['result' => 'data']);
-} catch (Throwable $e) {
-    handleError($e);
-}
-```
-
-**Available Helper Functions:**
-- `validateMethod(array $methods)` - Validate HTTP method
-- `resolvePath(string $path)` - Resolve path within data directory
-- `resolvePathWithTrash(string $path)` - Resolve path with trash support
-- Note: Endpoints should NOT attempt to hardcode or redefine `API_DATA_DIR` / `API_TRASH_DIR`.
-    The bootstrap will define these constants automatically by discovering the public root. If you need a non-standard layout, consider using an environment variable or updating `Config.php`.
-- `getInput(int $type, string $key, mixed $default)` - Get input safely
-- `sendSuccess(array $data, int $code)` - Send JSON success response
-- `sendError(string $message, int $code)` - Send JSON error response
-- `handleError(Throwable $e)` - Handle exceptions uniformly
 
 ## Architecture
 

@@ -9,14 +9,9 @@ validateMethod(['POST']);
 try {
     $subPath     = getInput(INPUT_POST, 'path', '');
     $currentName = getInput(INPUT_POST, 'name', '');
-    $newName     = getInput(INPUT_POST, 'newName', '');
 
     if ($currentName === '') {
         throw new RuntimeException('Current file name is required.');
-    }
-
-    if ($newName === '') {
-        throw new RuntimeException('New file name is required.');
     }
 
     $targetDir = resolvePath($subPath);
@@ -25,11 +20,12 @@ try {
         throw new RuntimeException('Specified path is not a writable directory.');
     }
 
-    $renamedPath = FileOperations::rename($targetDir, $currentName, $newName);
+    $realDir = rtrim($targetDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+    $newPath = FileOperations::move($realDir . $currentName, API_TRASH_DIR);
 
     sendSuccess([
         'path'     => $subPath,
-        'filename' => basename($renamedPath),
+        'filename' => basename($newPath),
     ]);
 } catch (Throwable $e) {
     handleError($e);

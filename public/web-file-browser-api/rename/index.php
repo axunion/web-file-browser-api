@@ -19,7 +19,7 @@ try {
         throw new RuntimeException('New file name is required.');
     }
 
-    $targetDir = resolvePath($subPath);
+    $targetDir = resolvePathWithTrash($subPath);
 
     if (!is_dir($targetDir) || !is_writable($targetDir)) {
         throw new RuntimeException('Specified path is not a writable directory.');

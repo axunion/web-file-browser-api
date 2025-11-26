@@ -61,8 +61,9 @@ final class Config
 
     /**
      * Allowed origins for CORS requests.
-     * Use '*' to allow all origins (not recommended for production).
-     * Use specific domains like 'https://example.com' for better security.
+     *
+     * WARNING: '*' allows all origins and is NOT recommended for production.
+     * Always specify exact origins in production (e.g., 'https://example.com').
      */
     public const CORS_ALLOWED_ORIGIN = '*';
 

@@ -100,29 +100,32 @@ final class PathSecurity
         $extPart   = $extension === '' ? '' : '.' . strtolower($extension);
         $candidate = $realDir . $baseName . $extPart;
 
-        if (!file_exists($candidate)) {
-            return $candidate;
-        }
-
-        $lockFile = $realDir . '.construct_lock';
+        $lockFile = $realDir . '.seq_lock';
         $fp = fopen($lockFile, 'c');
 
-        if ($fp) {
-            flock($fp, LOCK_EX);
+        if ($fp === false) {
+            throw new PathException("Failed to create lock file in: {$directoryPath}");
         }
 
-        $counter = 1;
+        flock($fp, LOCK_EX);
 
-        do {
-            $candidate = $realDir . $baseName . '_' . $counter . $extPart;
-            $counter++;
-        } while (file_exists($candidate));
+        try {
+            if (!file_exists($candidate)) {
+                return $candidate;
+            }
 
-        if ($fp) {
+            $counter = 1;
+
+            do {
+                $candidate = $realDir . $baseName . '_' . $counter . $extPart;
+                $counter++;
+            } while (file_exists($candidate));
+
+            return $candidate;
+        } finally {
             flock($fp, LOCK_UN);
             fclose($fp);
+            @unlink($lockFile);
         }
-
-        return $candidate;
     }
 }

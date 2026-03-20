@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php test/run-all.php)",
+      "Bash(php test-api/run-all.php)",
+      "Bash(php test-api/*.test.php)",
+      "Bash(php test/*.test.php)",
+      "Bash(php -l *)"
+    ]
+  }
+}

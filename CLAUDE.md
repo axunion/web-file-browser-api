@@ -72,6 +72,37 @@ try {
 - **POST /upload-images** - Batch image upload
 - **POST /rename** - Rename file/directory
 - **POST /delete** - Move to trash
+- **POST /move** - Move file/directory to a different location
+
+## Security Guidelines
+
+- All user-provided paths must go through `resolvePath()` or `resolvePathWithTrash()` (calls `PathSecurity::resolveSafePath()`)
+- Validate filenames with `PathSecurity::validateFileName()` before any create/rename operation
+- Verify MIME types via `finfo` (content analysis) — never trust file extensions
+- Verify uploads with `is_uploaded_file()` before moving
+- Never expose internal filesystem paths in responses or error messages
+
+## Error Handling
+
+Exception types and their HTTP status mappings (handled by `handleError()`):
+- `PathException` → 400 (invalid/unsafe path)
+- `ValidationException` → 400 (invalid input)
+- `DirectoryException` → 400 (directory operation failure)
+- All other `Throwable` → 500
+
+## Adding New Code
+
+**New endpoint**: Create `public/web-file-browser-api/{name}/index.php` following the Endpoint Pattern above.
+
+**New utility class**: Add to `src/web-file-browser-api/`, use `declare(strict_types=1)`, explicit types throughout.
+
+**New tests**: Unit tests in `test/{ClassName}.test.php`, API tests in `test-api/{endpoint-name}.test.php`. Always test success, error, and path-traversal cases.
+
+## Git Workflow
+
+- Commit messages: English, imperative mood ("Add move endpoint", not "Added" or "Adding")
+- Atomic commits: one logical change per commit
+- Run tests before committing
 
 ## Conventions
 

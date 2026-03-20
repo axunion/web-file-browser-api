@@ -7,6 +7,8 @@ A secure, lightweight PHP API for file management operations. Built with securit
 - 📁 **Directory Listing**: Browse directories with type-safe scanning
 - 📤 **File Upload**: Single and batch uploads with MIME type validation
 - ✏️ **File & Directory Rename**: Safe renaming with comprehensive validation
+- 📦 **File Move**: Move files and directories to different locations
+- 🗑️ **File Delete**: Move files to trash with safe path resolution
 - 🔒 **Security**: Path traversal prevention, input validation, sandboxed operations
 - 🧪 **Tested**: Comprehensive test suite for security-critical functions
 
@@ -21,6 +23,15 @@ Bootstrap behaviour: at runtime the bootstrap searches parent directories of the
 ## API Endpoints
 
 All endpoints return JSON with `status` field (`success` or `error`).
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/list` | List directory contents |
+| POST | `/upload` | Single file upload |
+| POST | `/upload-images` | Batch image upload |
+| POST | `/rename` | Rename file or directory |
+| POST | `/delete` | Move file to trash |
+| POST | `/move` | Move file or directory |
 
 ## Development
 
@@ -42,5 +53,3 @@ php test-api/upload-images.test.php   # Run individual test (auto-starts server)
 - **Security First**: Path traversal prevention, input validation, sandboxed operations
 - **Simple & Testable**: Hand-written tests, no frameworks, direct execution
 - **Type Safe**: Strict types throughout, fail fast on invalid input
-
-See `.github/copilot-instructions.md` for detailed development guidelines.

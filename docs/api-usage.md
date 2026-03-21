@@ -1,18 +1,16 @@
 # API Usage Guide (Frontend)
 
-Full API reference: [`openapi.yaml`](../openapi.yaml) — open in [Swagger Editor](https://editor.swagger.io/) for interactive documentation.
+Full API reference: [`openapi.yaml`](../openapi.yaml) — open in [Swagger Editor](https://editor.swagger.io/) for interactive documentation. The spec omits a `servers` entry; set the base URL in Swagger Editor's **Servers** field to match your deployment (e.g. `https://example.com/my-app/api`).
 
 ## Base URL
 
-```
-/web-file-browser-api
-```
-
-Configure this once for your environment:
+The URL prefix depends on where you deploy the `public/api/` directory. Configure it once for your environment:
 
 ```js
-const API_BASE = "/web-file-browser-api";
+const API_BASE = "/api";  // adjust to match your PUBLIC_DIR deployment path
 ```
+
+For example, if `PUBLIC_DIR` is `/home/user/public_html/files/api/`, the base URL is `/files/api`.
 
 ## Response Format
 

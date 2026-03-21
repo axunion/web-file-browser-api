@@ -1,6 +1,6 @@
 ---
 paths:
-  - "public/web-file-browser-api/**/*.php"
+  - "public/api/**/*.php"
 ---
 
 # Endpoint Rules

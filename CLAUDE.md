@@ -26,7 +26,7 @@ No build or lint process - pure PHP.
 
 ### Request Flow
 ```
-HTTP Request → Endpoint (public/web-file-browser-api/{endpoint}/index.php)
+HTTP Request → Endpoint (public/api/{endpoint}/index.php)
     ↓
 Bootstrap (loads dependencies, discovers data/trash dirs, handles CORS)
     ↓
@@ -39,22 +39,22 @@ JSON Response (sendSuccess/sendError helpers)
 
 ### Key Components
 
-**PathSecurity** (`src/web-file-browser-api/PathSecurity.php`) - Security-critical path validation:
+**PathSecurity** (`src/PathSecurity.php`) - Security-critical path validation:
 - `resolveSafePath()` - Prevents directory traversal attacks
 - `validateFileName()` - Enforces platform-specific filename rules
 - `constructSequentialFilePath()` - Prevents overwrites with file locking
 
-**Bootstrap** (`src/web-file-browser-api/bootstrap.php`) - Central orchestrator:
+**Bootstrap** (`src/bootstrap.php`) - Central orchestrator:
 - Auto-discovers data/trash directories by walking up from executing script
 - Provides helpers: `resolvePath()`, `resolvePathWithTrash()`, `validateMethod()`, `sendSuccess()`, `sendError()`, `handleError()`
 - Maps exceptions to HTTP status: PathException/ValidationException/DirectoryException → 400, others → 500
 
-**Config** (`src/web-file-browser-api/Config.php`) - Upload limits, allowed MIME types, CORS settings
+**Config** (`src/Config.php`) - Upload limits, allowed MIME types, CORS settings
 
 ### Endpoint Pattern
 All endpoints follow this structure:
 ```php
-require_once __DIR__ . '/../../../src/web-file-browser-api/bootstrap.php';
+require_once __DIR__ . '/../../../src/bootstrap.php';
 validateMethod(['POST']);
 try {
     $input = getInput(INPUT_POST, 'key', 'default');
@@ -92,13 +92,34 @@ Exception types and their HTTP status mappings (handled by `handleError()`):
 
 ## Adding New Code
 
-**New endpoint**: Create `public/web-file-browser-api/{name}/index.php` following the Endpoint Pattern above.
+**New endpoint**: Create `public/api/{name}/index.php` following the Endpoint Pattern above.
 
-**New utility class**: Add to `src/web-file-browser-api/`, use `declare(strict_types=1)`, explicit types throughout.
+**New utility class**: Add directly to `src/` (alongside existing classes), use `declare(strict_types=1)`, explicit types throughout.
 
-**New tests**: Unit tests in `test/{ClassName}.test.php`, API tests in `test-api/{endpoint-name}.test.php`. Always test success, error, and path-traversal cases.
+**New tests**: Unit tests in `test/{ClassName}.test.php`, API tests in `test-api/{endpoint-name}.test.php`. Always test success, error, and path-traversal cases. Use `test/TestHelpers.php` for unit test setup and `test-api/ApiTestHelpers.php` + `test-api/TestSetup.php` for API tests.
 
 **API spec**: Update `openapi.yaml` in the same commit whenever you add or modify an endpoint (parameters, response shape, error conditions, or constraints). Also update `docs/api-usage.md` if the change affects the fetch() patterns, upload limits, or collision-handling behaviour documented there.
+
+## Deployment
+
+### Directory structure rationale
+
+`public/api/` uses a generic directory name that is intentionally decoupled from the server URL. The actual URL prefix is determined by the server admin via deploy secrets (`PUBLIC_DIR`) — not by the repository. This keeps the project reusable across different hosting environments.
+
+### FTP deploy (GitHub Actions)
+
+Two directories are deployed via FTP on push to `main`:
+
+| Local path | Secret | Purpose |
+|------------|--------|---------|
+| `src/` | `SRC_DIR` | PHP source classes (should be outside or protected from web access) |
+| `public/api/` | `PUBLIC_DIR` | API endpoint scripts (inside document root, determines URL) |
+
+`.htaccess` files are placed inside each deployed directory so they are included automatically:
+- `public/api/.htaccess` — HTTPS redirect, CORS, compression, `Options -Indexes`
+- `src/.htaccess` — `Require all denied` (blocks direct HTTP access)
+
+`data/` and `trash/` directories are **not** deployed — the bootstrap creates them at runtime beside `public/api/` if they do not exist.
 
 ## Git Workflow
 

@@ -7,14 +7,14 @@ require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
  * API Test: Directory Listing Endpoint
- * Tests: /web-file-browser-api/list/
+ * Tests: /api/list/
  */
 
 echo "Testing directory listing endpoint...\n";
 
 // Test 1: List root directory
 echo "  - List root directory... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => '']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => '']);
 ApiTestHelpers::assertSuccess($response, 'Root directory listing');
 ApiTestHelpers::assertArrayHasKey('list', $response['json'], 'Response has list key');
 assert(is_array($response['json']['list']), 'List is an array');
@@ -22,26 +22,26 @@ echo "OK\n";
 
 // Test 2: List existing subdirectory
 echo "  - List existing subdirectory... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => 'directory']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => 'directory']);
 ApiTestHelpers::assertSuccess($response, 'Subdirectory listing');
 ApiTestHelpers::assertArrayHasKey('list', $response['json'], 'Response has list key');
 echo "OK\n";
 
 // Test 3: Invalid path (path traversal attempt)
 echo "  - Reject path traversal attempt... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => '../../../etc']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => '../../../etc']);
 ApiTestHelpers::assertError($response, 400, 'Path traversal rejected');
 echo "OK\n";
 
 // Test 4: Non-existent directory
 echo "  - Handle non-existent directory... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => 'nonexistent-dir']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => 'nonexistent-dir']);
 ApiTestHelpers::assertError($response, 400, 'Non-existent directory');
 echo "OK\n";
 
 // Test 5: Verify response structure
 echo "  - Verify response structure... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => '']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => '']);
 ApiTestHelpers::assertSuccess($response);
 if (!empty($response['json']['list'])) {
     $firstItem = $response['json']['list'][0];
@@ -56,7 +56,7 @@ echo "OK\n";
 
 // Test 6: Check content-type header
 echo "  - Verify JSON content-type... ";
-$response = ApiTestHelpers::get('/web-file-browser-api/list/', ['path' => '']);
+$response = ApiTestHelpers::get('/api/list/', ['path' => '']);
 assert(
     str_contains($response['headers']['Content-Type'] ?? '', 'application/json'),
     'Content-Type is application/json'

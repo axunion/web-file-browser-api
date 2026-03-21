@@ -47,7 +47,7 @@ if (!defined('API_DATA_DIR') || !defined('API_TRASH_DIR')) {
 
     // Fallback to previous layout if discovery failed
     if ($publicRoot === null) {
-        $publicRoot = realpath(__DIR__ . '/../../public') ?: __DIR__ . '/../../public';
+        $publicRoot = realpath(__DIR__ . '/../public') ?: __DIR__ . '/../public';
     }
 
     $dataDir = $publicRoot . '/data';

@@ -16,9 +16,9 @@ A secure, lightweight PHP API for file management operations. Built with securit
 
 - PHP 8.1 or higher
 - Web server (Apache/Nginx)
-- Write permissions for `public/data/` and `public/trash/` directories
+- Write permissions for `data/` and `trash/` directories (located beside the deployed API directory)
 
-Bootstrap behaviour: at runtime the bootstrap searches parent directories of the executing script for a `data` or `trash` directory and treats that parent as the web root. As long as `data` and `trash` exist under the web root, the physical name of the web folder (for example `public`) does not matter. For non-standard layouts, override via environment variables or `Config.php`.
+Bootstrap behaviour: at runtime the bootstrap searches parent directories of the executing script for a `data` or `trash` directory and treats that parent as the web root. As long as `data` and `trash` exist beside the deployed API directory, the physical directory names do not matter.
 
 ## API Endpoints
 
@@ -36,6 +36,40 @@ All endpoints return JSON with `status` field (`success` or `error`).
 Full API specification: see [`openapi.yaml`](openapi.yaml). Open it in [Swagger Editor](https://editor.swagger.io/) for interactive documentation.
 
 Frontend integration guide with fetch() examples: [`docs/api-usage.md`](docs/api-usage.md).
+
+## Deployment
+
+### Directory Structure
+
+The repository uses generic directory names (`api/`) that are decoupled from the server's URL path. The actual URL prefix is determined by where you deploy, not by the repository:
+
+```
+Repository    →  Server (example)
+public/api/   →  /home/user/public_html/my-app/api/   (URL: /my-app/api/)
+src/          →  /home/user/src/                       (not web-accessible)
+```
+
+`.htaccess` files are co-located inside each deployed directory so they are included automatically:
+- `public/api/.htaccess` — HTTPS redirect, CORS headers, compression, disables directory listing
+- `src/.htaccess` — blocks all HTTP access (`Require all denied`)
+
+> **Important**: if `SRC_DIR` is inside the web server's document root, verify that `src/.htaccess` is deployed and that your Apache configuration allows `.htaccess` overrides (`AllowOverride All`).
+
+### GitHub Actions (FTP deploy)
+
+Deployment is triggered automatically on push to `main`. Configure these repository secrets:
+
+| Secret | Description | Example value |
+|--------|-------------|---------------|
+| `FTP_SERVER` | FTP hostname | `ftp.example.com` |
+| `FTP_USERNAME` | FTP username | `user@example.com` |
+| `FTP_PASSWORD` | FTP password | — |
+| `SRC_DIR` | Server path for `src/` | `/home/user/src/` |
+| `PUBLIC_DIR` | Server path for `public/api/` | `/home/user/public_html/my-app/api/` |
+
+`PUBLIC_DIR` determines the URL path of the API. `data/` and `trash/` directories are created automatically at runtime beside the `api/` directory.
+
+A manual dry-run is available under **Actions → Deploy → Run workflow** (dry-run defaults to `true`).
 
 ## Development
 

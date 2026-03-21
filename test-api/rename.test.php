@@ -7,7 +7,7 @@ require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
  * API Test: File Rename Endpoint
- * Tests: /web-file-browser-api/rename/
+ * Tests: /api/rename/
  */
 
 echo "Testing file rename endpoint...\n";
@@ -22,7 +22,7 @@ file_put_contents($testFile2, 'Source file for renaming');
 
 // Test 1: Rename file in root directory
 echo "  - Rename file in root... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-file.txt',
     'newName' => 'renamed-file.txt',
@@ -37,7 +37,7 @@ echo "OK\n";
 echo "  - Rename file in subdirectory... ";
 $subFile = DATA_DIR . '/directory/test-rename-sub.txt';
 file_put_contents($subFile, 'Subdirectory file');
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => 'directory',
     'name' => 'test-rename-sub.txt',
     'newName' => 'renamed-sub.txt',
@@ -50,7 +50,7 @@ echo "OK\n";
 
 // Test 3: Invalid filename (empty)
 echo "  - Reject empty filename... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-source.txt',
     'newName' => '',
@@ -61,7 +61,7 @@ echo "OK\n";
 
 // Test 4: Invalid filename (path traversal)
 echo "  - Reject path traversal in new name... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-source.txt',
     'newName' => '../../../etc/passwd',
@@ -72,7 +72,7 @@ echo "OK\n";
 
 // Test 5: Invalid filename (null byte)
 echo "  - Reject null byte in filename... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-source.txt',
     'newName' => "test\x00.txt",
@@ -83,7 +83,7 @@ echo "OK\n";
 
 // Test 6: Invalid source path (path traversal)
 echo "  - Reject path traversal in source... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '../../../etc',
     'name' => 'passwd',
     'newName' => 'hacked.txt',
@@ -93,7 +93,7 @@ echo "OK\n";
 
 // Test 7: Non-existent source file
 echo "  - Handle non-existent source... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'non-existent-file.txt',
     'newName' => 'new-name.txt',
@@ -103,7 +103,7 @@ echo "OK\n";
 
 // Test 8: Reserved filename (Windows)
 echo "  - Reject reserved filename... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-source.txt',
     'newName' => 'CON.txt',
@@ -114,7 +114,7 @@ echo "OK\n";
 
 // Test 9: Filename with special characters
 echo "  - Handle special characters... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'test-rename-source.txt',
     'newName' => 'file_with-special.chars_123.txt',
@@ -135,7 +135,7 @@ $conflictSource = DATA_DIR . '/conflict-source.txt';
 file_put_contents($existingFile, 'Existing file');
 file_put_contents($conflictSource, 'File to rename');
 
-$response = ApiTestHelpers::post('/web-file-browser-api/rename/', [
+$response = ApiTestHelpers::post('/api/rename/', [
     'path' => '',
     'name' => 'conflict-source.txt',
     'newName' => 'existing-file.txt',

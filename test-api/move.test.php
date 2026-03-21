@@ -7,7 +7,7 @@ require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
  * API Test: File Move Endpoint
- * Tests: /web-file-browser-api/move/
+ * Tests: /api/move/
  */
 
 echo "Testing file move endpoint...\n";
@@ -24,7 +24,7 @@ $testDir2 = DATA_DIR . '/move-test-dest';
 echo "  - Move file to another directory... ";
 $srcFile1 = $testDir1 . '/test-move-file.txt';
 file_put_contents($srcFile1, 'Move me');
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'test-move-file.txt',
     'destinationPath' => 'move-test-dest',
@@ -43,7 +43,7 @@ echo "OK\n";
 echo "  - Move file into subdirectory... ";
 $srcFile2 = DATA_DIR . '/test-move-to-sub.txt';
 file_put_contents($srcFile2, 'Move to subdirectory');
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => '',
     'name'            => 'test-move-to-sub.txt',
     'destinationPath' => 'move-test-dest',
@@ -61,7 +61,7 @@ $srcFile3 = $testDir1 . '/collision-test.txt';
 $existingFile = $testDir2 . '/collision-test.txt';
 file_put_contents($srcFile3, 'Source file');
 file_put_contents($existingFile, 'Existing file');
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'collision-test.txt',
     'destinationPath' => 'move-test-dest',
@@ -77,7 +77,7 @@ echo "OK\n";
 
 // Test 4: Reject path traversal in source path
 echo "  - Reject path traversal in source path... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => '../../../etc',
     'name'            => 'passwd',
     'destinationPath' => 'move-test-dest',
@@ -89,7 +89,7 @@ echo "OK\n";
 echo "  - Reject path traversal in destination path... ";
 $srcFile5 = $testDir1 . '/traversal-test.txt';
 file_put_contents($srcFile5, 'Test content');
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'traversal-test.txt',
     'destinationPath' => '../../../tmp',
@@ -100,7 +100,7 @@ echo "OK\n";
 
 // Test 6: Reject non-existent source file
 echo "  - Reject non-existent source file... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'non-existent-file.txt',
     'destinationPath' => 'move-test-dest',
@@ -112,7 +112,7 @@ echo "OK\n";
 echo "  - Reject non-existent destination directory... ";
 $srcFile7 = $testDir1 . '/dest-not-exist-test.txt';
 file_put_contents($srcFile7, 'Test content');
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'dest-not-exist-test.txt',
     'destinationPath' => 'non-existent-directory',
@@ -123,7 +123,7 @@ echo "OK\n";
 
 // Test 8: Reject missing name parameter
 echo "  - Reject missing name parameter... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => '',
     'destinationPath' => 'move-test-dest',
@@ -133,7 +133,7 @@ echo "OK\n";
 
 // Test 9: Reject missing destinationPath parameter
 echo "  - Reject missing destinationPath parameter... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/move/', [
+$response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
     'name'            => 'some-file.txt',
     'destinationPath' => '',

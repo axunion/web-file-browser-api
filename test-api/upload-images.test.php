@@ -7,7 +7,7 @@ require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
  * API Test: Batch Image Upload Endpoint
- * Tests: /web-file-browser-api/upload-images/
+ * Tests: /api/upload-images/
  */
 
 echo "Testing batch image upload endpoint...\n";
@@ -21,7 +21,7 @@ $img2 = ApiTestHelpers::createTempImage(200, 200, 'png');
 $img3 = ApiTestHelpers::createTempImage(150, 150, 'jpeg');
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$img1, $img2, $img3]]
 );
@@ -52,7 +52,7 @@ $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 $img2 = ApiTestHelpers::createTempImage(100, 100, 'png');
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => 'directory'],
     ['images' => [$img1, $img2]]
 );
@@ -80,7 +80,7 @@ echo "  - Upload single image... ";
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$img1]]
 );
@@ -94,7 +94,7 @@ echo "OK\n";
 
 // Test 4: No files uploaded (error case)
 echo "  - Handle missing files... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/upload-images/', ['path' => '']);
+$response = ApiTestHelpers::post('/api/upload-images/', ['path' => '']);
 ApiTestHelpers::assertError($response, 400, 'Missing files rejected');
 echo "OK\n";
 
@@ -107,7 +107,7 @@ $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 $filesBefore = glob(DATA_DIR . '/api_test_*.{jpg,png}', GLOB_BRACE) ?: [];
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$img1, $txtFile]]
 );
@@ -132,7 +132,7 @@ echo "  - Reject path traversal... ";
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => '../../../tmp'],
     ['images' => [$img1]]
 );
@@ -149,7 +149,7 @@ for ($i = 0; $i < 11; $i++) {
 }
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => $images]
 );
@@ -169,7 +169,7 @@ $img2 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
 // First upload
 $response1 = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$img1]]
 );
@@ -179,7 +179,7 @@ ApiTestHelpers::registerUploadedFile(DATA_DIR, $file1);
 
 // Second upload with same filename
 $response2 = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$img2]]
 );
@@ -202,7 +202,7 @@ $png1 = ApiTestHelpers::createTempImage(100, 100, 'png');
 $jpeg2 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
 $response = ApiTestHelpers::postMultipart(
-    '/web-file-browser-api/upload-images/',
+    '/api/upload-images/',
     ['path' => ''],
     ['images' => [$jpeg1, $png1, $jpeg2]]
 );

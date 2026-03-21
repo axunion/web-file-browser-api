@@ -22,9 +22,9 @@ jobs:
     strategy:
       matrix:
         directory:
-          - local: ./src/web-file-browser-api/
+          - local: ./src/
             server: SRC_DIR
-          - local: ./public/web-file-browser-api/
+          - local: ./public/api/
             server: PUBLIC_DIR
     steps:
       - name: Checkout code

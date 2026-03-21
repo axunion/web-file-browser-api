@@ -7,7 +7,7 @@ require_once __DIR__ . '/ApiTestHelpers.php';
 
 /**
  * API Test: File Delete Endpoint
- * Tests: /web-file-browser-api/delete/
+ * Tests: /api/delete/
  */
 
 echo "Testing file delete endpoint...\n";
@@ -23,7 +23,7 @@ file_put_contents($subFile, 'Delete me in subdir');
 
 // Test 1: Delete file in root directory
 echo "  - Delete file in root... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/delete/', [
+$response = ApiTestHelpers::post('/api/delete/', [
     'path' => '',
     'name' => 'test-delete-file.txt',
 ]);
@@ -37,7 +37,7 @@ echo "OK\n";
 
 // Test 2: Delete file in subdirectory
 echo "  - Delete file in subdirectory... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/delete/', [
+$response = ApiTestHelpers::post('/api/delete/', [
     'path' => 'directory',
     'name' => 'test-delete-sub.txt',
 ]);
@@ -51,7 +51,7 @@ echo "OK\n";
 
 // Test 3: Missing filename (invalid)
 echo "  - Reject missing filename... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/delete/', [
+$response = ApiTestHelpers::post('/api/delete/', [
     'path' => '',
     'name' => '',
 ]);
@@ -60,7 +60,7 @@ echo "OK\n";
 
 // Test 4: Path traversal attempt in path
 echo "  - Reject path traversal in path... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/delete/', [
+$response = ApiTestHelpers::post('/api/delete/', [
     'path' => '../../../etc',
     'name' => 'passwd',
 ]);
@@ -69,7 +69,7 @@ echo "OK\n";
 
 // Test 5: Non-existent file
 echo "  - Handle non-existent file... ";
-$response = ApiTestHelpers::post('/web-file-browser-api/delete/', [
+$response = ApiTestHelpers::post('/api/delete/', [
     'path' => '',
     'name' => 'this-file-does-not-exist.txt',
 ]);

@@ -15,10 +15,6 @@ info:
     - Empty string `""` refers to the root data directory.
     - Use a `trash/` prefix in `path` (list endpoint only) to reference the trash directory.
 
-servers:
-  - url: /web-file-browser-api
-    description: API base path
-
 paths:
   /list/:
     get:

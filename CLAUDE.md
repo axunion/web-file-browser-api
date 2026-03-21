@@ -98,6 +98,8 @@ Exception types and their HTTP status mappings (handled by `handleError()`):
 
 **New tests**: Unit tests in `test/{ClassName}.test.php`, API tests in `test-api/{endpoint-name}.test.php`. Always test success, error, and path-traversal cases.
 
+**API spec**: Update `openapi.yaml` in the same commit whenever you add or modify an endpoint (parameters, response shape, error conditions, or constraints). Also update `docs/api-usage.md` if the change affects the fetch() patterns, upload limits, or collision-handling behaviour documented there.
+
 ## Git Workflow
 
 - Commit messages: English, imperative mood ("Add move endpoint", not "Added" or "Adding")

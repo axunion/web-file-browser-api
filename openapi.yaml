@@ -1,0 +1,433 @@
+openapi: 3.0.3
+
+info:
+  title: Web File Browser API
+  version: 1.0.0
+  description: |
+    A secure, lightweight PHP API for file management operations.
+
+    All endpoints return JSON. Every response includes a `status` field:
+    - `"success"` — operation succeeded (HTTP 200)
+    - `"error"` — operation failed (HTTP 400, 405, or 500)
+
+    **Path parameter notes**:
+    - `path` is always relative to the data root directory.
+    - Empty string `""` refers to the root data directory.
+    - Use a `trash/` prefix in `path` (list endpoint only) to reference the trash directory.
+
+servers:
+  - url: /web-file-browser-api
+    description: API base path
+
+paths:
+  /list/:
+    get:
+      summary: List directory contents
+      description: |
+        Returns the contents of a directory, sorted with directories first then
+        files (natural, case-insensitive order). Symlinks are excluded.
+
+        Pass `path=trash/` or `path=trash/subdir` to list the trash directory.
+      parameters:
+        - name: path
+          in: query
+          required: false
+          schema:
+            type: string
+            default: ""
+          description: >
+            Relative path of the directory to list. Empty string lists the root
+            data directory. Prefix with `trash/` to list the trash directory.
+          example: "documents"
+      responses:
+        "200":
+          description: Directory contents
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StatusSuccess"
+                  - type: object
+                    required:
+                      - list
+                    properties:
+                      list:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/ListItem"
+              example:
+                status: success
+                list:
+                  - type: directory
+                    name: photos
+                  - type: file
+                    name: readme.txt
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /upload/:
+    post:
+      summary: Upload a single file
+      description: |
+        Uploads a single file (JPEG, PNG, or PDF) to the specified directory.
+
+        If the uploaded filename already exists at the destination, a sequential
+        suffix is appended automatically (e.g. `file (1).pdf`).
+
+        **Limits**: 100 MB maximum file size.
+        **Allowed types**: `image/jpeg`, `image/png`, `application/pdf`.
+        MIME type is verified by content analysis — file extension is not trusted.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                path:
+                  type: string
+                  default: ""
+                  description: Target directory (relative to data root). Empty string for root.
+                  example: "documents"
+                file:
+                  type: string
+                  format: binary
+                  description: The file to upload.
+      responses:
+        "200":
+          description: File uploaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatusSuccess"
+              example:
+                status: success
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /upload-images/:
+    post:
+      summary: Batch image upload
+      description: |
+        Uploads multiple image files (JPEG or PNG) to the specified directory.
+
+        If any uploaded filename already exists at the destination, a sequential
+        suffix is appended automatically. The response returns the final filenames
+        as stored on disk (which may differ from the original names).
+
+        **Note**: Validation failures on individual files do not roll back files
+        already uploaded in the same request.
+
+        **Limits**:
+        - Maximum 10 files per request
+        - Maximum 10 MB per file
+        - Maximum 30 MB total per request
+
+        **Allowed types**: `image/jpeg`, `image/png`.
+        MIME type is verified by content analysis — file extension is not trusted.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                path:
+                  type: string
+                  default: ""
+                  description: Target directory (relative to data root). Empty string for root.
+                  example: "photos/2024"
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: >
+                    Array of image files. Use field name `images[]` in the form
+                    submission.
+            encoding:
+              images:
+                style: form
+                explode: true
+      responses:
+        "200":
+          description: Images uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/StatusSuccess"
+                  - type: object
+                    required:
+                      - files
+                    properties:
+                      files:
+                        type: array
+                        items:
+                          type: string
+                        description: >
+                          Final filenames as stored on disk (basenames only). May differ
+                          from original names if sequential naming was applied.
+              example:
+                status: success
+                files:
+                  - photo1.jpg
+                  - photo2.jpg
+                  - photo2 (1).jpg
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /rename/:
+    post:
+      summary: Rename a file or directory
+      description: |
+        Renames a file or directory within the same directory.
+
+        Unlike the move and delete endpoints, rename does **not** auto-resolve
+        filename conflicts — if `newName` already exists in the directory, the
+        request returns a 400 error.
+
+        **Filename restrictions**: Reserved Windows names (`CON`, `PRN`, `AUX`,
+        `NUL`, `COM1`–`COM9`, `LPT1`–`LPT9`), null bytes, and path separators
+        are rejected.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - name
+                - newName
+              properties:
+                path:
+                  type: string
+                  default: ""
+                  description: Directory containing the item to rename.
+                  example: "documents"
+                name:
+                  type: string
+                  description: Current filename or directory name.
+                  example: "old-name.txt"
+                newName:
+                  type: string
+                  description: Desired new filename or directory name.
+                  example: "new-name.txt"
+      responses:
+        "200":
+          description: Item renamed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileOperationResponse"
+              example:
+                status: success
+                path: documents
+                filename: new-name.txt
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /delete/:
+    post:
+      summary: Move a file to trash (soft delete)
+      description: |
+        Moves a file to the trash directory. This is a **soft delete** — the file
+        is not permanently removed.
+
+        If a file with the same name already exists in trash, a sequential suffix
+        is appended automatically (e.g. `file (1).txt`). The `filename` field in
+        the response reflects the final name in trash.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - name
+              properties:
+                path:
+                  type: string
+                  default: ""
+                  description: Directory containing the file to delete.
+                  example: "documents"
+                name:
+                  type: string
+                  description: Filename to move to trash.
+                  example: "old-report.pdf"
+      responses:
+        "200":
+          description: File moved to trash successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileOperationResponse"
+              example:
+                status: success
+                path: documents
+                filename: old-report.pdf
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+  /move/:
+    post:
+      summary: Move a file or directory to a different location
+      description: |
+        Moves a file or directory from one location to another within the data
+        directory.
+
+        If the filename already exists at the destination, a sequential suffix is
+        appended automatically (e.g. `file (1).txt`). The `filename` field in the
+        response reflects the final name at the destination.
+
+        Both `path` and `destinationPath` must resolve within the data directory.
+        Moving to or from the trash directory is not supported by this endpoint.
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required:
+                - name
+                - destinationPath
+              properties:
+                path:
+                  type: string
+                  default: ""
+                  description: Source directory.
+                  example: "inbox"
+                name:
+                  type: string
+                  description: Filename or directory name to move.
+                  example: "report.pdf"
+                destinationPath:
+                  type: string
+                  description: Target directory (must be non-empty).
+                  example: "archive/2024"
+      responses:
+        "200":
+          description: Item moved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FileOperationResponse"
+              example:
+                status: success
+                path: archive/2024
+                filename: report.pdf
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+
+components:
+  schemas:
+    StatusSuccess:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: string
+          enum:
+            - error
+        message:
+          type: string
+          description: Human-readable description of the error.
+      example:
+        status: error
+        message: "File not found"
+
+    ListItem:
+      type: object
+      required:
+        - type
+        - name
+      properties:
+        type:
+          type: string
+          enum:
+            - file
+            - directory
+        name:
+          type: string
+          description: Filename or directory name (basename only, no path).
+
+    FileOperationResponse:
+      description: >
+        Returned by rename, delete, and move on success. `path` echoes back the
+        relevant directory and `filename` is the final name of the item.
+      allOf:
+        - $ref: "#/components/schemas/StatusSuccess"
+        - type: object
+          required:
+            - path
+            - filename
+          properties:
+            path:
+              type: string
+              description: >
+                For rename/delete: the directory that was operated on.
+                For move: the destination directory.
+            filename:
+              type: string
+              description: >
+                Final name of the file (basename only). May differ from the
+                original name if sequential naming was applied to resolve a
+                conflict.
+
+  responses:
+    BadRequest:
+      description: |
+        Invalid input. Possible causes:
+        - Path traversal attempt (e.g. `../`)
+        - Null byte in a parameter
+        - Required parameter is empty or missing
+        - Source file/directory does not exist
+        - Target directory does not exist or is not writable
+        - Invalid or disallowed file type (upload endpoints)
+        - File size exceeds the limit (upload endpoints)
+        - Filename conflict — only for `/rename/` (other endpoints auto-resolve)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+    MethodNotAllowed:
+      description: HTTP method not allowed for this endpoint.
+      headers:
+        Allow:
+          description: Comma-separated list of allowed methods.
+          schema:
+            type: string
+          example: "POST"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

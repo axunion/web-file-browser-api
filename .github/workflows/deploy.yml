@@ -28,10 +28,12 @@ jobs:
             server: PUBLIC_DIR
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Upload Directory
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.6
+        env:
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         with:
           log-level: standard
           server: ${{ secrets.FTP_SERVER }}

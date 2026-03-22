@@ -17,7 +17,7 @@ echo "  - List root directory... ";
 $response = ApiTestHelpers::get('/api/list/', ['path' => '']);
 ApiTestHelpers::assertSuccess($response, 'Root directory listing');
 ApiTestHelpers::assertArrayHasKey('list', $response['json'], 'Response has list key');
-assert(is_array($response['json']['list']), 'List is an array');
+ApiTestHelpers::assertTrue(is_array($response['json']['list']), 'List is an array');
 echo "OK\n";
 
 // Test 2: List existing subdirectory
@@ -47,7 +47,7 @@ if (!empty($response['json']['list'])) {
     $firstItem = $response['json']['list'][0];
     ApiTestHelpers::assertArrayHasKey('name', $firstItem, 'List item has name');
     ApiTestHelpers::assertArrayHasKey('type', $firstItem, 'List item has type');
-    assert(
+    ApiTestHelpers::assertTrue(
         in_array($firstItem['type'], ['file', 'directory'], true),
         'Item type is file or directory'
     );
@@ -57,10 +57,27 @@ echo "OK\n";
 // Test 6: Check content-type header
 echo "  - Verify JSON content-type... ";
 $response = ApiTestHelpers::get('/api/list/', ['path' => '']);
-assert(
+ApiTestHelpers::assertTrue(
     str_contains($response['headers']['Content-Type'] ?? '', 'application/json'),
     'Content-Type is application/json'
 );
+echo "OK\n";
+
+// Test 7: List trash directory via resolvePathWithTrash()
+echo "  - List trash directory... ";
+$trashDir = __DIR__ . '/../public/trash';
+$trashTestFile = $trashDir . '/list-test-trash-item.txt';
+file_put_contents($trashTestFile, 'trash content');
+$response = ApiTestHelpers::get('/api/list/', ['path' => 'trash']);
+ApiTestHelpers::assertSuccess($response, 'Trash listing');
+ApiTestHelpers::assertArrayHasKey('list', $response['json'], 'Trash response has list key');
+@unlink($trashTestFile);
+echo "OK\n";
+
+// Test 9: Reject POST method (list is GET-only)
+echo "  - Reject POST method... ";
+$response = ApiTestHelpers::post('/api/list/', ['path' => '']);
+ApiTestHelpers::assertError($response, 405, 'POST method rejected on list endpoint');
 echo "OK\n";
 
 echo "All list endpoint tests passed!\n";

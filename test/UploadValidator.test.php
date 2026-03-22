@@ -14,95 +14,79 @@ $uploadDir = sys_get_temp_dir() . '/upload_test_' . uniqid();
 mkdir($uploadDir, 0777, true);
 $realUploadDir = realpath($uploadDir);
 
-// Test 1: checkFileSize validation
-$validator1 = new UploadValidator(
+$validator = new UploadValidator(
     allowedMimeTypes: ['image/jpeg', 'image/png'],
     maxFileSize: 1024 * 1024 // 1MB
 );
 
-// Simulate file array for size check (error must be tested separately)
-$oversizedFile = [
-    'name' => 'large.jpg',
-    'type' => 'image/jpeg',
-    'tmp_name' => '/tmp/mock',
-    'error' => UPLOAD_ERR_OK,
-    'size' => 2 * 1024 * 1024, // 2MB
-];
-
+// Test 1: checkUploadError - no file uploaded
 assertException(
-    fn() => $validator1->validate($oversizedFile),
-    'UploadValidator: file size exceeds limit'
+    fn() => $validator->validate([
+        'name'     => 'test.jpg',
+        'type'     => 'image/jpeg',
+        'tmp_name' => '/tmp/mock',
+        'error'    => UPLOAD_ERR_NO_FILE,
+        'size'     => 0,
+    ]),
+    'UploadValidator: UPLOAD_ERR_NO_FILE detected',
+    ValidationException::class
 );
 
-// Test 2: validateBatch - too many files
-$validator2 = new UploadValidator(
+// Test 2: checkUploadError - partial upload
+assertException(
+    fn() => $validator->validate([
+        'name'     => 'test.jpg',
+        'type'     => 'image/jpeg',
+        'tmp_name' => '/tmp/mock',
+        'error'    => UPLOAD_ERR_PARTIAL,
+        'size'     => 0,
+    ]),
+    'UploadValidator: UPLOAD_ERR_PARTIAL detected',
+    ValidationException::class
+);
+
+// Test 3: validateBatch - too many files
+$validatorBatch = new UploadValidator(
     allowedMimeTypes: ['image/jpeg'],
     maxFileSize: 1024 * 1024
 );
 
-$tooManyFiles = [
-    'name' => array_fill(0, 15, 'file.jpg'),
-    'size' => array_fill(0, 15, 500 * 1024),
-];
-
 assertException(
-    fn() => $validator2->validateBatch($tooManyFiles, maxFiles: 10, maxTotalSize: 30 * 1024 * 1024),
-    'UploadValidator: too many files'
+    fn() => $validatorBatch->validateBatch(
+        ['name' => array_fill(0, 15, 'file.jpg'), 'size' => array_fill(0, 15, 500 * 1024)],
+        maxFiles: 10,
+        maxTotalSize: 30 * 1024 * 1024
+    ),
+    'UploadValidator: too many files',
+    ValidationException::class
 );
 
-// Test 3: validateBatch - total size exceeds limit
-$largeBatch = [
-    'name' => ['file1.jpg', 'file2.jpg'],
-    'size' => [20 * 1024 * 1024, 20 * 1024 * 1024], // 40MB total
-];
-
+// Test 4: validateBatch - total size exceeds limit
 assertException(
-    fn() => $validator2->validateBatch($largeBatch, maxFiles: 10, maxTotalSize: 30 * 1024 * 1024),
-    'UploadValidator: total size exceeds limit'
+    fn() => $validatorBatch->validateBatch(
+        ['name' => ['file1.jpg', 'file2.jpg'], 'size' => [20 * 1024 * 1024, 20 * 1024 * 1024]],
+        maxFiles: 10,
+        maxTotalSize: 30 * 1024 * 1024
+    ),
+    'UploadValidator: total size exceeds limit',
+    ValidationException::class
 );
 
-// Test 4: validateBatch - empty files array
-$emptyFiles = [
-    'name' => [],
-    'size' => [],
-];
-
+// Test 5: validateBatch - empty files array
 assertException(
-    fn() => $validator2->validateBatch($emptyFiles, maxFiles: 10, maxTotalSize: 30 * 1024 * 1024),
-    'UploadValidator: no files uploaded'
+    fn() => $validatorBatch->validateBatch(
+        ['name' => [], 'size' => []],
+        maxFiles: 10,
+        maxTotalSize: 30 * 1024 * 1024
+    ),
+    'UploadValidator: no files uploaded',
+    ValidationException::class
 );
 
-// Test 5: checkUploadError
-$errorFile = [
-    'name' => 'test.jpg',
-    'type' => 'image/jpeg',
-    'tmp_name' => '/tmp/mock',
-    'error' => UPLOAD_ERR_NO_FILE,
-    'size' => 0,
-];
-
-assertException(
-    fn() => $validator1->validate($errorFile),
-    'UploadValidator: upload error detected'
-);
-
-// Test 6: Invalid filename
-$invalidNameFile = [
-    'name' => 'bad:name?.jpg',
-    'type' => 'image/jpeg',
-    'tmp_name' => '/tmp/mock',
-    'error' => UPLOAD_ERR_OK,
-    'size' => 500 * 1024,
-];
-
-assertException(
-    fn() => $validator1->validate($invalidNameFile),
-    'UploadValidator: invalid filename characters'
-);
-
-// Note: We cannot fully test MIME type validation and actual file upload
-// without creating real uploaded files, which requires special test setup.
-// The tests above cover the business logic that can be tested in isolation.
+// Note: checkIsUploaded, checkFileSize, and checkMimeType in validate() require
+// a real HTTP-uploaded file (is_uploaded_file check). These paths are covered
+// by the API integration tests in test-api/upload.test.php and
+// test-api/upload-images.test.php.
 
 echo "PASS: UploadValidator constructor accepts parameters\n";
 echo "All UploadValidator tests passed.\n";

@@ -27,7 +27,6 @@ final class ApiTestHelpers
      */
     private static array $uploadedFiles = [];
 
-    // Ensure shutdown handler is registered once
     private static bool $shutdownRegistered = false;
 
     /** Default timeout (seconds) for HTTP requests. */
@@ -218,21 +217,21 @@ final class ApiTestHelpers
     {
         $prefix = $message ? "$message: " : '';
 
-        assert(
-            $response['code'] === 200,
-            $prefix . "Expected HTTP 200, got {$response['code']}"
-        );
+        if ($response['code'] !== 200) {
+            echo "FAIL: {$prefix}Expected HTTP 200, got {$response['code']}\n";
+            exit(1);
+        }
 
         // Be defensive: json may be null if response body wasn't valid JSON
         if (!is_array($response['json']) || !array_key_exists('status', $response['json'])) {
-            assert(false, $prefix . "Response JSON missing or invalid; cannot assert 'status'");
-            return;
+            echo "FAIL: {$prefix}Response JSON missing or invalid; cannot assert 'status'\n";
+            exit(1);
         }
 
-        assert(
-            $response['json']['status'] === 'success',
-            $prefix . "Expected status 'success', got '" . $response['json']['status'] . "'"
-        );
+        if ($response['json']['status'] !== 'success') {
+            echo "FAIL: {$prefix}Expected status 'success', got '{$response['json']['status']}'\n";
+            exit(1);
+        }
     }
 
     /**
@@ -242,20 +241,20 @@ final class ApiTestHelpers
     {
         $prefix = $message ? "$message: " : '';
 
-        assert(
-            $response['code'] === $expectedCode,
-            $prefix . "Expected HTTP {$expectedCode}, got {$response['code']}"
-        );
-
-        if (!is_array($response['json']) || !array_key_exists('status', $response['json'])) {
-            assert(false, $prefix . "Response JSON missing or invalid; cannot assert 'status'");
-            return;
+        if ($response['code'] !== $expectedCode) {
+            echo "FAIL: {$prefix}Expected HTTP {$expectedCode}, got {$response['code']}\n";
+            exit(1);
         }
 
-        assert(
-            $response['json']['status'] === 'error',
-            $prefix . "Expected status 'error', got '" . $response['json']['status'] . "'"
-        );
+        if (!is_array($response['json']) || !array_key_exists('status', $response['json'])) {
+            echo "FAIL: {$prefix}Response JSON missing or invalid; cannot assert 'status'\n";
+            exit(1);
+        }
+
+        if ($response['json']['status'] !== 'error') {
+            echo "FAIL: {$prefix}Expected status 'error', got '{$response['json']['status']}'\n";
+            exit(1);
+        }
     }
 
     /**
@@ -264,10 +263,11 @@ final class ApiTestHelpers
     public static function assertEquals($expected, $actual, string $message = ''): void
     {
         $prefix = $message ? "$message: " : '';
-        assert(
-            $expected === $actual,
-            $prefix . "Expected " . var_export($expected, true) . ", got " . var_export($actual, true)
-        );
+        if ($expected !== $actual) {
+            echo "FAIL: {$prefix}Expected " . var_export($expected, true) . ", got " . var_export($actual, true) . "\n";
+            exit(1);
+        }
+        echo "PASS: $message\n";
     }
 
     /**
@@ -276,10 +276,23 @@ final class ApiTestHelpers
     public static function assertArrayHasKey(string $key, array $array, string $message = ''): void
     {
         $prefix = $message ? "$message: " : '';
-        assert(
-            array_key_exists($key, $array),
-            $prefix . "Expected array to have key '$key'"
-        );
+        if (!array_key_exists($key, $array)) {
+            echo "FAIL: {$prefix}Expected array to have key '$key'\n";
+            exit(1);
+        }
+        echo "PASS: $message\n";
+    }
+
+    /**
+     * Assert that a boolean condition is true.
+     * Silent on success (no PASS echo) — use as a drop-in for raw assert().
+     */
+    public static function assertTrue(bool $condition, string $message = ''): void
+    {
+        if (!$condition) {
+            echo "FAIL: $message\n";
+            exit(1);
+        }
     }
 
     /**
@@ -328,7 +341,6 @@ final class ApiTestHelpers
                   . "\xE3\xE4\xE5\xE6\xE7\xE8\xE9\xEA\xF1\xF2\xF3\xF4\xF5\xF6\xF7\xF8\xF9\xFA\xFF\xDA"
                   . "\x00\x08\x01\x01\x00\x00\x3F\x00\xFE\xFE\xFF\xD9";
             file_put_contents($tmpFile, $jpeg);
-            self::registerTempFile($tmpFile);
         } elseif ($format === 'png') {
             // Create minimal valid PNG (1x1 red pixel)
             $png = "\x89\x50\x4E\x47\x0D\x0A\x1A\x0A"
@@ -336,10 +348,44 @@ final class ApiTestHelpers
                  . "\x00\x00\x00\x0C\x49\x44\x41\x54\x08\xD7\x63\xF8\xCF\xC0\x00\x00\x03\x01\x01\x00\x18\xDD\x8D\xB4"
                  . "\x00\x00\x00\x00\x49\x45\x4E\x44\xAE\x42\x60\x82";
             file_put_contents($tmpFile, $png);
-            self::registerTempFile($tmpFile);
         }
 
+        self::registerTempFile($tmpFile);
         return $tmpFile;
+    }
+
+    /**
+     * Create a minimal valid PDF temporary file.
+     */
+    public static function createTempPdf(): string
+    {
+        $tmpFile = rtrim(sys_get_temp_dir(), DIRECTORY_SEPARATOR)
+            . DIRECTORY_SEPARATOR
+            . 'api_test_' . uniqid('', true) . '.pdf';
+
+        // Minimal valid 1-page PDF
+        $pdf = "%PDF-1.4\n"
+             . "1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj\n"
+             . "2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj\n"
+             . "3 0 obj<</Type/Page/MediaBox[0 0 3 3]>>endobj\n"
+             . "xref\n0 4\n0000000000 65535 f\n"
+             . "0000000009 00000 n\n0000000058 00000 n\n"
+             . "0000000115 00000 n\n"
+             . "trailer<</Size 4/Root 1 0 R>>\n"
+             . "startxref\n190\n%%EOF\n";
+
+        file_put_contents($tmpFile, $pdf);
+        self::registerTempFile($tmpFile);
+
+        return $tmpFile;
+    }
+
+    private static function ensureShutdownRegistered(): void
+    {
+        if (!self::$shutdownRegistered) {
+            register_shutdown_function([self::class, 'cleanupAll']);
+            self::$shutdownRegistered = true;
+        }
     }
 
     /**
@@ -349,11 +395,7 @@ final class ApiTestHelpers
     {
         if (!in_array($path, self::$tempFiles, true)) {
             self::$tempFiles[] = $path;
-            // Register shutdown handler lazily when first temp file is added
-            if (!self::$shutdownRegistered) {
-                register_shutdown_function([self::class, 'cleanupAll']);
-                self::$shutdownRegistered = true;
-            }
+            self::ensureShutdownRegistered();
         }
     }
 
@@ -368,11 +410,7 @@ final class ApiTestHelpers
         $fullPath = rtrim($dataDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $filename;
         if (!in_array($fullPath, self::$uploadedFiles, true)) {
             self::$uploadedFiles[] = $fullPath;
-            // Register shutdown handler lazily
-            if (!self::$shutdownRegistered) {
-                register_shutdown_function([self::class, 'cleanupAll']);
-                self::$shutdownRegistered = true;
-            }
+            self::ensureShutdownRegistered();
         }
     }
 

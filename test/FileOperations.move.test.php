@@ -75,6 +75,16 @@ assertException(
 );
 
 
+// 6. Passing a directory (not a file) throws exception
+$subDirToMove = $realSourceDir . '/subdir_to_move';
+mkdir($subDirToMove, 0777, true);
+assertException(
+    function () use ($subDirToMove, $destDir) {
+        FileOperations::move($subDirToMove, $destDir);
+    },
+    'FileOperations::move: directory source rejected (move is file-only)'
+);
+
 // Cleanup temporary dirs
 rrmdir($realSourceDir);
 rrmdir($realDestDir);

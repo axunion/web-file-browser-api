@@ -34,8 +34,8 @@ ApiTestHelpers::assertArrayHasKey('filename', $response['json'], 'Response has f
 ApiTestHelpers::assertArrayHasKey('path', $response['json'], 'Response has path');
 ApiTestHelpers::assertEquals('move-test-dest', $response['json']['path'], 'Destination path matches');
 $movedName = $response['json']['filename'];
-assert(!file_exists($srcFile1), 'Original file removed');
-assert(file_exists($testDir2 . '/' . $movedName), 'File moved to destination');
+ApiTestHelpers::assertTrue(!file_exists($srcFile1), 'Original file removed');
+ApiTestHelpers::assertTrue(file_exists($testDir2 . '/' . $movedName), 'File moved to destination');
 @unlink($testDir2 . '/' . $movedName);
 echo "OK\n";
 
@@ -50,8 +50,8 @@ $response = ApiTestHelpers::post('/api/move/', [
 ]);
 ApiTestHelpers::assertSuccess($response, 'Move file to subdirectory');
 $movedName = $response['json']['filename'];
-assert(!file_exists($srcFile2), 'Original file removed');
-assert(file_exists($testDir2 . '/' . $movedName), 'File moved to subdirectory');
+ApiTestHelpers::assertTrue(!file_exists($srcFile2), 'Original file removed');
+ApiTestHelpers::assertTrue(file_exists($testDir2 . '/' . $movedName), 'File moved to subdirectory');
 @unlink($testDir2 . '/' . $movedName);
 echo "OK\n";
 
@@ -68,9 +68,9 @@ $response = ApiTestHelpers::post('/api/move/', [
 ]);
 ApiTestHelpers::assertSuccess($response, 'Move with collision');
 $movedName = $response['json']['filename'];
-assert($movedName !== 'collision-test.txt', 'Filename changed due to collision');
-assert(!file_exists($srcFile3), 'Original file removed');
-assert(file_exists($testDir2 . '/' . $movedName), 'File moved with new name');
+ApiTestHelpers::assertTrue($movedName !== 'collision-test.txt', 'Filename changed due to collision');
+ApiTestHelpers::assertTrue(!file_exists($srcFile3), 'Original file removed');
+ApiTestHelpers::assertTrue(file_exists($testDir2 . '/' . $movedName), 'File moved with new name');
 @unlink($existingFile);
 @unlink($testDir2 . '/' . $movedName);
 echo "OK\n";
@@ -139,6 +139,16 @@ $response = ApiTestHelpers::post('/api/move/', [
     'destinationPath' => '',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Missing destinationPath rejected');
+echo "OK\n";
+
+// Test 10: Reject GET method (move is POST-only)
+echo "  - Reject GET method... ";
+$response = ApiTestHelpers::get('/api/move/', [
+    'path'            => 'move-test-src',
+    'name'            => 'file.txt',
+    'destinationPath' => 'move-test-dest',
+]);
+ApiTestHelpers::assertError($response, 405, 'GET method rejected on move endpoint');
 echo "OK\n";
 
 // Cleanup test directories

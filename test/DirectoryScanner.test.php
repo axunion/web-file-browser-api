@@ -54,4 +54,39 @@ assertEquals('file2.log', $items[2]->name, 'Second file name');
 
 rrmdir($base);
 
+// Empty directory returns empty array
+$emptyDir = sys_get_temp_dir() . '/dir_empty_' . uniqid();
+mkdir($emptyDir, 0777, true);
+$emptyItems = DirectoryScanner::scan($emptyDir);
+assertEquals(0, count($emptyItems), 'DirectoryScanner::scan: empty directory returns empty array');
+rrmdir($emptyDir);
+
+// Natural sort order: file2 before file10
+$natDir = sys_get_temp_dir() . '/dir_nat_' . uniqid();
+mkdir($natDir, 0777, true);
+file_put_contents($natDir . '/file10.txt', 'ten');
+file_put_contents($natDir . '/file2.txt', 'two');
+file_put_contents($natDir . '/file1.txt', 'one');
+$natItems = DirectoryScanner::scan($natDir);
+assertEquals(3, count($natItems), 'DirectoryScanner::scan: natural sort item count');
+assertEquals('file1.txt', $natItems[0]->name, 'Natural sort: file1 first');
+assertEquals('file2.txt', $natItems[1]->name, 'Natural sort: file2 second');
+assertEquals('file10.txt', $natItems[2]->name, 'Natural sort: file10 last');
+rrmdir($natDir);
+
+// Symlinks are skipped
+$symlinkBase = sys_get_temp_dir() . '/dir_sym_' . uniqid();
+mkdir($symlinkBase, 0777, true);
+$realFile = $symlinkBase . '/real.txt';
+$symLink  = $symlinkBase . '/link.txt';
+file_put_contents($realFile, 'real');
+if (symlink($realFile, $symLink)) {
+    $symItems = DirectoryScanner::scan($symlinkBase);
+    assertEquals(1, count($symItems), 'DirectoryScanner::scan: symlink excluded from results');
+    assertEquals('real.txt', $symItems[0]->name, 'Only real file returned, not symlink');
+} else {
+    echo "PASS: DirectoryScanner::scan: symlink skipping - skipped (symlink() not supported)\n";
+}
+rrmdir($symlinkBase);
+
 echo "All DirectoryScanner tests passed.\n";

@@ -28,8 +28,8 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => 'renamed-file.txt',
 ]);
 ApiTestHelpers::assertSuccess($response, 'Rename file');
-assert(!file_exists($testFile1), 'Original file removed');
-assert(file_exists(DATA_DIR . '/renamed-file.txt'), 'New file exists');
+ApiTestHelpers::assertTrue(!file_exists($testFile1), 'Original file removed');
+ApiTestHelpers::assertTrue(file_exists(DATA_DIR . '/renamed-file.txt'), 'New file exists');
 unlink(DATA_DIR . '/renamed-file.txt'); // Cleanup
 echo "OK\n";
 
@@ -43,8 +43,8 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => 'renamed-sub.txt',
 ]);
 ApiTestHelpers::assertSuccess($response, 'Rename file in subdirectory');
-assert(!file_exists($subFile), 'Original file removed from subdirectory');
-assert(file_exists(DATA_DIR . '/directory/renamed-sub.txt'), 'Renamed file exists');
+ApiTestHelpers::assertTrue(!file_exists($subFile), 'Original file removed from subdirectory');
+ApiTestHelpers::assertTrue(file_exists(DATA_DIR . '/directory/renamed-sub.txt'), 'Renamed file exists');
 unlink(DATA_DIR . '/directory/renamed-sub.txt'); // Cleanup
 echo "OK\n";
 
@@ -56,7 +56,7 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => '',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Empty filename rejected');
-assert(file_exists($testFile2), 'Original file unchanged');
+ApiTestHelpers::assertTrue(file_exists($testFile2), 'Original file unchanged');
 echo "OK\n";
 
 // Test 4: Invalid filename (path traversal)
@@ -67,7 +67,7 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => '../../../etc/passwd',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Path traversal in newName rejected');
-assert(file_exists($testFile2), 'Original file unchanged');
+ApiTestHelpers::assertTrue(file_exists($testFile2), 'Original file unchanged');
 echo "OK\n";
 
 // Test 5: Invalid filename (null byte)
@@ -78,7 +78,7 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => "test\x00.txt",
 ]);
 ApiTestHelpers::assertError($response, 400, 'Null byte rejected');
-assert(file_exists($testFile2), 'Original file unchanged');
+ApiTestHelpers::assertTrue(file_exists($testFile2), 'Original file unchanged');
 echo "OK\n";
 
 // Test 6: Invalid source path (path traversal)
@@ -109,7 +109,7 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => 'CON.txt',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Reserved filename rejected');
-assert(file_exists($testFile2), 'Original file unchanged');
+ApiTestHelpers::assertTrue(file_exists($testFile2), 'Original file unchanged');
 echo "OK\n";
 
 // Test 9: Filename with special characters
@@ -120,8 +120,8 @@ $response = ApiTestHelpers::post('/api/rename/', [
     'newName' => 'file_with-special.chars_123.txt',
 ]);
 ApiTestHelpers::assertSuccess($response, 'Special characters allowed');
-assert(!file_exists($testFile2), 'Original file removed');
-assert(
+ApiTestHelpers::assertTrue(!file_exists($testFile2), 'Original file removed');
+ApiTestHelpers::assertTrue(
     file_exists(DATA_DIR . '/file_with-special.chars_123.txt'),
     'File with special characters exists'
 );
@@ -142,12 +142,18 @@ $response = ApiTestHelpers::post('/api/rename/', [
 ]);
 // Rename endpoint rejects conflicts rather than auto-renaming
 ApiTestHelpers::assertError($response, 400, 'Filename conflict rejected');
-assert(file_exists($conflictSource), 'Source file unchanged');
-assert(file_exists($existingFile), 'Existing file unchanged');
+ApiTestHelpers::assertTrue(file_exists($conflictSource), 'Source file unchanged');
+ApiTestHelpers::assertTrue(file_exists($existingFile), 'Existing file unchanged');
 
 // Cleanup
 unlink($existingFile);
 unlink($conflictSource);
+echo "OK\n";
+
+// Test 11: Reject GET method (rename is POST-only)
+echo "  - Reject GET method... ";
+$response = ApiTestHelpers::get('/api/rename/', ['path' => '', 'name' => 'a.txt', 'newName' => 'b.txt']);
+ApiTestHelpers::assertError($response, 405, 'GET method rejected on rename endpoint');
 echo "OK\n";
 
 echo "All rename endpoint tests passed!\n";

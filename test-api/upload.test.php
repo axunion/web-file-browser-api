@@ -73,8 +73,35 @@ $response = ApiTestHelpers::post('/api/upload/', [
 ApiTestHelpers::assertError($response, 400, 'Non-existent directory rejected');
 echo "OK\n";
 
-// Note: Full upload tests with actual file content require HTTP multipart requests.
-// The upload-images endpoint tests cover actual file upload scenarios.
-echo "  - Note: Full file upload tests are covered by upload-images endpoint\n";
+// Test 8: Upload JPEG file (success)
+echo "  - Upload JPEG file... ";
+$jpegFile = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
+$response = ApiTestHelpers::postMultipart('/api/upload/', ['path' => ''], ['file' => $jpegFile]);
+ApiTestHelpers::assertSuccess($response, 'JPEG upload');
+ApiTestHelpers::registerUploadedFile(DATA_DIR, basename($jpegFile));
+echo "OK\n";
+
+// Test 9: Upload PNG file (success)
+echo "  - Upload PNG file... ";
+$pngFile = ApiTestHelpers::createTempImage(100, 100, 'png');
+$response = ApiTestHelpers::postMultipart('/api/upload/', ['path' => ''], ['file' => $pngFile]);
+ApiTestHelpers::assertSuccess($response, 'PNG upload');
+ApiTestHelpers::registerUploadedFile(DATA_DIR, basename($pngFile));
+echo "OK\n";
+
+// Test 10: Upload PDF file (success — /upload accepts pdf, /upload-images does not)
+echo "  - Upload PDF file... ";
+$pdfFile = ApiTestHelpers::createTempPdf();
+$response = ApiTestHelpers::postMultipart('/api/upload/', ['path' => ''], ['file' => $pdfFile]);
+ApiTestHelpers::assertSuccess($response, 'PDF upload');
+ApiTestHelpers::registerUploadedFile(DATA_DIR, basename($pdfFile));
+echo "OK\n";
+
+// Test 11: Reject wrong MIME type (text file disguised with .jpg extension)
+echo "  - Reject wrong MIME type... ";
+$fakeImage = ApiTestHelpers::createTempFile('This is plain text, not an image.', 'jpg');
+$response = ApiTestHelpers::postMultipart('/api/upload/', ['path' => ''], ['file' => $fakeImage]);
+ApiTestHelpers::assertError($response, 400, 'Wrong MIME type rejected');
+echo "OK\n";
 
 echo "All upload endpoint tests passed!\n";

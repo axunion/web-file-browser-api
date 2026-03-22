@@ -30,8 +30,8 @@ $response = ApiTestHelpers::post('/api/delete/', [
 ApiTestHelpers::assertSuccess($response, 'Delete root file');
 ApiTestHelpers::assertArrayHasKey('filename', $response['json'], 'Response has filename');
 $deletedName = $response['json']['filename'];
-assert(!file_exists($rootFile), 'Original file removed');
-assert(file_exists(TRASH_DIR . '/' . $deletedName), 'File moved to trash');
+ApiTestHelpers::assertTrue(!file_exists($rootFile), 'Original file removed');
+ApiTestHelpers::assertTrue(file_exists(TRASH_DIR . '/' . $deletedName), 'File moved to trash');
 @unlink(TRASH_DIR . '/' . $deletedName); // Cleanup moved file
 echo "OK\n";
 
@@ -44,8 +44,8 @@ $response = ApiTestHelpers::post('/api/delete/', [
 ApiTestHelpers::assertSuccess($response, 'Delete file in subdirectory');
 ApiTestHelpers::assertArrayHasKey('filename', $response['json'], 'Response has filename');
 $deletedName = $response['json']['filename'];
-assert(!file_exists($subFile), 'Original subdirectory file removed');
-assert(file_exists(TRASH_DIR . '/' . $deletedName), 'Subdirectory file moved to trash');
+ApiTestHelpers::assertTrue(!file_exists($subFile), 'Original subdirectory file removed');
+ApiTestHelpers::assertTrue(file_exists(TRASH_DIR . '/' . $deletedName), 'Subdirectory file moved to trash');
 @unlink(TRASH_DIR . '/' . $deletedName); // Cleanup moved file
 echo "OK\n";
 
@@ -74,6 +74,21 @@ $response = ApiTestHelpers::post('/api/delete/', [
     'name' => 'this-file-does-not-exist.txt',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Non-existent file handled');
+echo "OK\n";
+
+// Test 6: Reject GET method (delete is POST-only)
+echo "  - Reject GET method... ";
+$response = ApiTestHelpers::get('/api/delete/', ['path' => '', 'name' => 'a.txt']);
+ApiTestHelpers::assertError($response, 405, 'GET method rejected on delete endpoint');
+echo "OK\n";
+
+// Test 7: Reject slash in name parameter (path separator injection)
+echo "  - Reject slash in name parameter... ";
+$response = ApiTestHelpers::post('/api/delete/', [
+    'path' => '',
+    'name' => 'subdir/file.txt',
+]);
+ApiTestHelpers::assertError($response, 400, 'Slash in name rejected');
 echo "OK\n";
 
 echo "All delete endpoint tests passed!\n";

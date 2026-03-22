@@ -129,7 +129,30 @@ assertEquals(
 // 11. Invalid directory (non-existent)
 assertException(function () {
     PathSecurity::constructSequentialFilePath('/no/such/directory', 'x.txt');
-}, 'PathSecurity::constructSequentialFilePath: invalid directory');
+}, 'PathSecurity::constructSequentialFilePath: invalid directory', PathException::class);
+
+// 12. Extensionless file: README -> README_1 on collision
+$readmePath = PathSecurity::constructSequentialFilePath($seqDir, 'README');
+assertEquals(
+    $realSeqDir . '/README',
+    $readmePath,
+    'PathSecurity::constructSequentialFilePath: extensionless initial file'
+);
+file_put_contents($readmePath, 'readme');
+$readmePath2 = PathSecurity::constructSequentialFilePath($seqDir, 'README');
+assertEquals(
+    $realSeqDir . '/README_1',
+    $readmePath2,
+    'PathSecurity::constructSequentialFilePath: extensionless collision gets _1'
+);
+
+// 13. Extension case normalization: File.JPG -> File.jpg
+$jpgPath = PathSecurity::constructSequentialFilePath($seqDir, 'Photo.JPG');
+assertEquals(
+    $realSeqDir . '/Photo.jpg',
+    $jpgPath,
+    'PathSecurity::constructSequentialFilePath: uppercase extension lowercased'
+);
 
 rrmdir($base);
 rrmdir($realSeqDir);

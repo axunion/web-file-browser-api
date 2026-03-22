@@ -27,22 +27,26 @@ function assertEquals($expected, $actual, string $message = ''): void
 }
 
 /**
- * Assert that a callable throws a RuntimeException.
+ * Assert that a callable throws an exception of the expected type.
  *
- * @param callable $fn      The function to test
- * @param string   $message Optional description of the test
+ * @param callable $fn              The function to test
+ * @param string   $message         Optional description of the test
+ * @param string   $expectedClass   Fully-qualified exception class name to require (optional)
  * @return void
  */
-function assertException(callable $fn, string $message = ''): void
+function assertException(callable $fn, string $message = '', string $expectedClass = ''): void
 {
     try {
         $fn();
         echo "FAIL: $message - No exception thrown\n";
         exit(1);
-    } catch (RuntimeException $e) {
-        echo "PASS: $message - Caught exception: {$e->getMessage()}\n";
-    } catch (Exception $e) {
-        echo "PASS: $message - Caught exception: " . get_class($e) . " (" . $e->getMessage() . ")\n";
+    } catch (Throwable $e) {
+        if ($expectedClass !== '' && !($e instanceof $expectedClass)) {
+            echo "FAIL: $message - Expected $expectedClass, got " . get_class($e) . ": {$e->getMessage()}\n";
+            exit(1);
+        }
+        $label = $expectedClass !== '' ? $expectedClass : get_class($e);
+        echo "PASS: $message - Caught $label: {$e->getMessage()}\n";
     }
 }
 

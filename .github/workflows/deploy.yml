@@ -24,7 +24,7 @@ jobs:
         directory:
           - local: ./src/
             server: SRC_DIR
-          - local: ./public/api/
+          - local: ./public/
             server: PUBLIC_DIR
     steps:
       - name: Checkout code
@@ -40,3 +40,7 @@ jobs:
           local-dir: ${{ matrix.directory.local }}
           server-dir: ${{ env[matrix.directory.server] }}
           dry-run: ${{ github.event.inputs['dry-run'] == 'true' }}
+          exclude: |
+            data/**
+            trash/**
+            .gitkeep

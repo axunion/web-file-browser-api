@@ -113,13 +113,15 @@ Two directories are deployed via FTP on push to `main`:
 | Local path | Secret | Purpose |
 |------------|--------|---------|
 | `src/` | `SRC_DIR` | PHP source classes (should be outside or protected from web access) |
-| `public/api/` | `PUBLIC_DIR` | API endpoint scripts (inside document root, determines URL) |
+| `public/` | `PUBLIC_DIR` | API endpoints + `.htaccess` (inside document root, determines URL) |
 
 `.htaccess` files are placed inside each deployed directory so they are included automatically:
-- `public/api/.htaccess` — HTTPS redirect, CORS, compression, `Options -Indexes`
+- `public/.htaccess` — HTTPS redirect, CORS, compression, `Options -Indexes` (covers `api/`, `data/`, `trash/`)
 - `src/.htaccess` — `Require all denied` (blocks direct HTTP access)
 
-`data/` and `trash/` directories are **not** deployed — the bootstrap creates them at runtime beside `public/api/` if they do not exist.
+`data/` and `trash/` are excluded from FTP sync — bootstrap creates them at runtime on first request beside `public/api/`. Their directory structure is tracked in git via `.gitkeep` files; contents are gitignored.
+
+Deployment paths are controlled by secrets (`SRC_DIR`, `PUBLIC_DIR`), so the same repository can be deployed to any server directory by updating those values.
 
 ## Git Workflow
 

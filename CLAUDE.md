@@ -46,8 +46,8 @@ JSON Response (sendSuccess/sendError helpers)
 
 **Bootstrap** (`src/bootstrap.php`) - Central orchestrator:
 - Auto-discovers data/trash directories by walking up from executing script
-- Provides helpers: `resolvePath()`, `resolvePathWithTrash()`, `validateMethod()`, `sendSuccess()`, `sendError()`, `handleError()`
-- Maps exceptions to HTTP status: PathException/ValidationException/DirectoryException → 400, others → 500
+- Provides helpers: `handleCors()`, `validateMethod()`, `getInput()`, `resolvePath()`, `resolvePathWithTrash()`, `sendSuccess()`, `sendError()`, `handleError()`
+- Maps exceptions to HTTP status: PathException/ValidationException/DirectoryException/RuntimeException → 400, others → 500
 
 **Config** (`src/Config.php`) - Upload limits, allowed MIME types, CORS settings
 
@@ -88,6 +88,7 @@ Exception types and their HTTP status mappings (handled by `handleError()`):
 - `PathException` → 400 (invalid/unsafe path)
 - `ValidationException` → 400 (invalid input)
 - `DirectoryException` → 400 (directory operation failure)
+- `RuntimeException` → 400 (runtime/business logic error)
 - All other `Throwable` → 500
 
 ## Adding New Code
@@ -140,7 +141,7 @@ Deployment paths are controlled by secrets (`SRC_DIR`, `PUBLIC_DIR`), so the sam
 
 - **Unit tests** (`test/`): Direct class testing with simple assertions
 - **API tests** (`test-api/`): HTTP requests via curl, auto-manages server startup/shutdown
-- `ApiTestHelpers.php` provides `get()`, `post()`, assertions, file cleanup tracking
+- `ApiTestHelpers.php` provides `get()`, `post()`, `postMultipart()`, assertions (`assertSuccess`, `assertError`, `assertEquals`, `assertArrayHasKey`, `assertTrue`), temp file factories (`createTempFile`, `createTempImage`, `createTempPdf`), and file cleanup tracking (`registerUploadedFile`, `cleanupAll`)
 
 ## Environment Variables
 

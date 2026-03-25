@@ -1,6 +1,6 @@
 # API Usage Guide (Frontend)
 
-Full API reference: [`openapi.yaml`](../openapi.yaml) — open in [Swagger Editor](https://editor.swagger.io/) for interactive documentation. The spec omits a `servers` entry; set the base URL in Swagger Editor's **Servers** field to match your deployment (e.g. `https://example.com/my-app/api`).
+Full API reference: [`openapi.yaml`](openapi.yaml) — open in [Swagger Editor](https://editor.swagger.io/) for interactive documentation. The spec omits a `servers` entry; set the base URL in Swagger Editor's **Servers** field to match your deployment (e.g. `https://example.com/my-app/api`).
 
 ## Base URL
 

@@ -33,7 +33,7 @@ All endpoints return JSON with `status` field (`success` or `error`).
 | POST | `/delete` | Move file to trash |
 | POST | `/move` | Move file or directory |
 
-Full API specification: see [`openapi.yaml`](openapi.yaml). Open it in [Swagger Editor](https://editor.swagger.io/) for interactive documentation.
+Full API specification: see [`docs/openapi.yaml`](docs/openapi.yaml). Open it in [Swagger Editor](https://editor.swagger.io/) for interactive documentation.
 
 Frontend integration guide with fetch() examples: [`docs/api-usage.md`](docs/api-usage.md).
 

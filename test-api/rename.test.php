@@ -150,7 +150,22 @@ unlink($existingFile);
 unlink($conflictSource);
 echo "OK\n";
 
-// Test 11: Reject GET method (rename is POST-only)
+// Test 11: Reject slash in current name parameter
+echo "  - Reject slash in current name parameter... ";
+$nestedRenameSource = DATA_DIR . '/directory/rename-path-injection.txt';
+file_put_contents($nestedRenameSource, 'Keep nested source');
+$response = ApiTestHelpers::post('/api/rename/', [
+    'path' => '',
+    'name' => 'directory/rename-path-injection.txt',
+    'newName' => 'renamed-path-injection.txt',
+]);
+ApiTestHelpers::assertError($response, 400, 'Slash in current name rejected');
+ApiTestHelpers::assertTrue(file_exists($nestedRenameSource), 'Nested source file unchanged after rejected rename');
+ApiTestHelpers::assertTrue(!file_exists(DATA_DIR . '/renamed-path-injection.txt'), 'Rejected rename created no root file');
+@unlink($nestedRenameSource);
+echo "OK\n";
+
+// Test 12: Reject GET method (rename is POST-only)
 echo "  - Reject GET method... ";
 $response = ApiTestHelpers::get('/api/rename/', ['path' => '', 'name' => 'a.txt', 'newName' => 'b.txt']);
 ApiTestHelpers::assertError($response, 405, 'GET method rejected on rename endpoint');

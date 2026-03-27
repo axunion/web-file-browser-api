@@ -12,12 +12,14 @@ try {
     $destinationPath = getInput(INPUT_POST, 'destinationPath', '');
 
     if ($fileName === '') {
-        throw new RuntimeException('File name is required.');
+        throw new ValidationException('File name is required.');
     }
 
     if ($destinationPath === '') {
-        throw new RuntimeException('Destination path is required.');
+        throw new ValidationException('Destination path is required.');
     }
+
+    PathSecurity::validateFileName($fileName);
 
     $sourceDir = resolvePath($subPath);
 

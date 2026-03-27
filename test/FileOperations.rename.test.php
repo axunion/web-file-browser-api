@@ -72,6 +72,14 @@ assertException(
     'FileOperations::rename: invalid new name'
 );
 
+// 3.2b. Invalid current name with path separators
+mkdir($realDir . '/nested');
+file_put_contents($realDir . '/nested/current.txt', 'nested current');
+assertException(
+    fn() => FileOperations::rename($realDir, 'nested/current.txt', 'renamed.txt'),
+    'FileOperations::rename: invalid current name with path separators'
+);
+
 // 3.3. Target already exists (file)
 file_put_contents($realDir . '/existing.txt', 'existing');
 assertException(

@@ -101,7 +101,9 @@ mkdir($seqDir, 0777, true);
 $realSeqDir = realpath($seqDir);
 
 // 10. Initial candidate
-$path1 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt');
+$path1 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt', function (string $path): void {
+    file_put_contents($path, 'a');
+});
 assertEquals(
     $realSeqDir . '/file.txt',
     $path1,
@@ -109,8 +111,9 @@ assertEquals(
 );
 
 // Create the first file and test next candidate
-file_put_contents($realSeqDir . '/file.txt', 'a');
-$path2 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt');
+$path2 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt', function (string $path): void {
+    file_put_contents($path, 'b');
+});
 assertEquals(
     $realSeqDir . '/file_1.txt',
     $path2,
@@ -118,8 +121,9 @@ assertEquals(
 );
 
 // Create the second file and test next candidate
-file_put_contents($realSeqDir . '/file_1.txt', 'b');
-$path3 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt');
+$path3 = PathSecurity::constructSequentialFilePath($seqDir, 'file.txt', function (string $path): void {
+    file_put_contents($path, 'c');
+});
 assertEquals(
     $realSeqDir . '/file_2.txt',
     $path3,
@@ -128,18 +132,22 @@ assertEquals(
 
 // 11. Invalid directory (non-existent)
 assertException(function () {
-    PathSecurity::constructSequentialFilePath('/no/such/directory', 'x.txt');
+    PathSecurity::constructSequentialFilePath('/no/such/directory', 'x.txt', function (string $path): void {
+    });
 }, 'PathSecurity::constructSequentialFilePath: invalid directory', PathException::class);
 
 // 12. Extensionless file: README -> README_1 on collision
-$readmePath = PathSecurity::constructSequentialFilePath($seqDir, 'README');
+$readmePath = PathSecurity::constructSequentialFilePath($seqDir, 'README', function (string $path): void {
+    file_put_contents($path, 'readme');
+});
 assertEquals(
     $realSeqDir . '/README',
     $readmePath,
     'PathSecurity::constructSequentialFilePath: extensionless initial file'
 );
-file_put_contents($readmePath, 'readme');
-$readmePath2 = PathSecurity::constructSequentialFilePath($seqDir, 'README');
+$readmePath2 = PathSecurity::constructSequentialFilePath($seqDir, 'README', function (string $path): void {
+    file_put_contents($path, 'readme 2');
+});
 assertEquals(
     $realSeqDir . '/README_1',
     $readmePath2,
@@ -147,7 +155,9 @@ assertEquals(
 );
 
 // 13. Extension case normalization: File.JPG -> File.jpg
-$jpgPath = PathSecurity::constructSequentialFilePath($seqDir, 'Photo.JPG');
+$jpgPath = PathSecurity::constructSequentialFilePath($seqDir, 'Photo.JPG', function (string $path): void {
+    file_put_contents($path, 'jpg');
+});
 assertEquals(
     $realSeqDir . '/Photo.jpg',
     $jpgPath,

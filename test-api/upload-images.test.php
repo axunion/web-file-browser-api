@@ -92,13 +92,28 @@ ApiTestHelpers::registerUploadedFile(DATA_DIR, $uploadedFiles[0]);
 unlink($img1);
 echo "OK\n";
 
-// Test 4: No files uploaded (error case)
+// Test 4: Upload single image using non-array field name
+echo "  - Upload single image with scalar field... ";
+$img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
+$response = ApiTestHelpers::postMultipart(
+    '/api/upload-images/',
+    ['path' => ''],
+    ['images' => $img1]
+);
+ApiTestHelpers::assertSuccess($response, 'Scalar field upload');
+$uploadedFiles = $response['json']['files'];
+ApiTestHelpers::assertEquals(1, count($uploadedFiles), 'Scalar field upload stores one file');
+ApiTestHelpers::registerUploadedFile(DATA_DIR, $uploadedFiles[0]);
+unlink($img1);
+echo "OK\n";
+
+// Test 5: No files uploaded (error case)
 echo "  - Handle missing files... ";
 $response = ApiTestHelpers::post('/api/upload-images/', ['path' => '']);
 ApiTestHelpers::assertError($response, 400, 'Missing files rejected');
 echo "OK\n";
 
-// Test 5: Invalid file type (non-image)
+// Test 6: Invalid file type (non-image)
 echo "  - Reject non-image file... ";
 $txtFile = ApiTestHelpers::createTempFile('Not an image', 'txt');
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
@@ -127,7 +142,7 @@ unlink($txtFile);
 unlink($img1);
 echo "OK\n";
 
-// Test 6: Path traversal attempt
+// Test 7: Path traversal attempt
 echo "  - Reject path traversal... ";
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 
@@ -141,7 +156,7 @@ ApiTestHelpers::assertError($response, 400, 'Path traversal rejected');
 unlink($img1);
 echo "OK\n";
 
-// Test 7: Too many files (max 10)
+// Test 8: Too many files (max 10)
 echo "  - Reject too many files... ";
 $images = [];
 for ($i = 0; $i < 11; $i++) {
@@ -162,7 +177,7 @@ foreach ($images as $img) {
 }
 echo "OK\n";
 
-// Test 8: Filename conflicts (sequential naming)
+// Test 9: Filename conflicts (sequential naming)
 echo "  - Handle filename conflicts... ";
 $img1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 $img2 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
@@ -195,7 +210,7 @@ unlink($img1);
 unlink($img2);
 echo "OK\n";
 
-// Test 9: Mixed JPEG and PNG
+// Test 10: Mixed JPEG and PNG
 echo "  - Handle mixed image formats... ";
 $jpeg1 = ApiTestHelpers::createTempImage(100, 100, 'jpeg');
 $png1 = ApiTestHelpers::createTempImage(100, 100, 'png');

@@ -3,56 +3,74 @@
 declare(strict_types=1);
 
 /**
- * Handles file movement and renaming operations.
+ * Handles file and directory movement and renaming operations.
  */
 final class FileOperations
 {
     /**
-     * Moves the specified file to the target directory, handling cross-filesystem
-     * and naming collisions robustly.
+     * Moves the specified file or directory to the target directory, handling
+     * naming collisions robustly.
      *
-     * @param string $filePath       Absolute or relative path of the file to move.
+     * @param string $filePath       Absolute or relative path of the file or directory to move.
      * @param string $destinationDir Absolute or relative path of the target directory.
-     * @return string                New absolute file path after moving.
+     * @return string                New absolute path after moving.
      * @throws RuntimeException      If validations fail or move cannot be completed.
      */
     public static function move(string $filePath, string $destinationDir): string
     {
         $realSrc = realpath($filePath);
 
-        if ($realSrc === false || !is_file($realSrc)) {
-            throw new RuntimeException("Specified path is not a valid file: {$filePath}");
+        if ($realSrc === false || (!is_file($realSrc) && !is_dir($realSrc))) {
+            throw new RuntimeException('Specified path is not a valid file or directory.');
         }
 
         $realDest = realpath($destinationDir);
 
         if ($realDest === false || !is_dir($realDest) || !is_writable($realDest)) {
-            throw new RuntimeException("Destination dir invalid or unwritable: {$destinationDir}");
+            throw new RuntimeException('Destination path is not a writable directory.');
         }
 
         $realDest = rtrim($realDest, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
 
         $filename = basename($realSrc);
         PathSecurity::validateFileName($filename);
-        $target   = PathSecurity::constructSequentialFilePath($realDest, $filename);
 
-        if (!@rename($realSrc, $target)) {
-            $error = error_get_last()['message'] ?? '';
-
-            if (strpos($error, 'EXDEV') !== false) {
-                if (!@copy($realSrc, $target)) {
-                    throw new RuntimeException("Failed to copy file across devices: {$error}");
-                }
-                if (!@unlink($realSrc)) {
-                    @unlink($target);
-                    throw new RuntimeException("Failed to remove original after copy.");
-                }
-            } else {
-                throw new RuntimeException("Failed to rename file: {$error}");
+        if (is_dir($realSrc)) {
+            $sourcePrefix = rtrim($realSrc, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            if (strncmp($realDest, $sourcePrefix, strlen($sourcePrefix)) === 0) {
+                throw new RuntimeException('Cannot move a directory into itself.');
             }
         }
 
-        return realpath($target) ?: $target;
+        return PathSecurity::constructSequentialFilePath(
+            $realDest,
+            $filename,
+            function (string $target) use ($realSrc): void {
+                if (@rename($realSrc, $target)) {
+                    return;
+                }
+
+                $error = error_get_last()['message'] ?? '';
+                if (!self::isCrossDeviceError($error)) {
+                    throw new RuntimeException('Failed to move the requested item.');
+                }
+
+                if (is_dir($realSrc)) {
+                    self::copyDirectory($realSrc, $target);
+                    self::removeDirectory($realSrc);
+                    return;
+                }
+
+                if (!@copy($realSrc, $target)) {
+                    throw new RuntimeException('Failed to move the requested item.');
+                }
+
+                if (!@unlink($realSrc)) {
+                    @unlink($target);
+                    throw new RuntimeException('Failed to move the requested item.');
+                }
+            }
+        );
     }
 
     /**
@@ -73,24 +91,95 @@ final class FileOperations
         }
 
         $realDir = rtrim($realDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+        PathSecurity::validateFileName($currentName);
         PathSecurity::validateFileName($newName);
 
         $srcPath = $realDir . $currentName;
         $dstPath = $realDir . $newName;
 
         if (!file_exists($srcPath)) {
-            throw new RuntimeException("File or directory not found: {$srcPath}");
+            throw new RuntimeException('The requested item was not found.');
         }
 
         if (file_exists($dstPath)) {
-            throw new RuntimeException("Cannot rename: target name already exists: {$newName}");
+            throw new RuntimeException('Target name already exists.');
         }
 
         if (!@rename($srcPath, $dstPath)) {
-            $err = error_get_last()['message'] ?? '';
-            throw new RuntimeException("Failed to rename '{$currentName}' → '{$newName}': {$err}");
+            throw new RuntimeException('Failed to rename the requested item.');
         }
 
         return realpath($dstPath) ?: $dstPath;
+    }
+
+    private static function isCrossDeviceError(string $error): bool
+    {
+        return stripos($error, 'EXDEV') !== false || stripos($error, 'cross-device') !== false;
+    }
+
+    private static function copyDirectory(string $source, string $target): void
+    {
+        if (!@mkdir($target, 0755)) {
+            throw new RuntimeException('Failed to move the requested item.');
+        }
+
+        $items = scandir($source);
+        if ($items === false) {
+            @rmdir($target);
+            throw new RuntimeException('Failed to move the requested item.');
+        }
+
+        try {
+            foreach ($items as $item) {
+                if ($item === '.' || $item === '..') {
+                    continue;
+                }
+
+                $sourcePath = $source . DIRECTORY_SEPARATOR . $item;
+                $targetPath = $target . DIRECTORY_SEPARATOR . $item;
+
+                if (is_dir($sourcePath)) {
+                    self::copyDirectory($sourcePath, $targetPath);
+                    continue;
+                }
+
+                if (!@copy($sourcePath, $targetPath)) {
+                    throw new RuntimeException('Failed to move the requested item.');
+                }
+            }
+        } catch (Throwable $e) {
+            if (is_dir($target)) {
+                self::removeDirectory($target);
+            }
+
+            throw $e;
+        }
+    }
+
+    private static function removeDirectory(string $directory): void
+    {
+        $items = scandir($directory);
+        if ($items === false) {
+            throw new RuntimeException('Failed to move the requested item.');
+        }
+
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $path = $directory . DIRECTORY_SEPARATOR . $item;
+            if (is_dir($path)) {
+                self::removeDirectory($path);
+            } else {
+                if (!@unlink($path)) {
+                    throw new RuntimeException('Failed to move the requested item.');
+                }
+            }
+        }
+
+        if (!@rmdir($directory)) {
+            throw new RuntimeException('Failed to move the requested item.');
+        }
     }
 }

@@ -75,7 +75,29 @@ ApiTestHelpers::assertTrue(file_exists($testDir2 . '/' . $movedName), 'File move
 @unlink($testDir2 . '/' . $movedName);
 echo "OK\n";
 
-// Test 4: Reject path traversal in source path
+// Test 4: Move directory to another directory
+echo "  - Move directory to another directory... ";
+$dirSource = DATA_DIR . '/move-dir-src';
+$dirNestedFile = $dirSource . '/nested.txt';
+@mkdir($dirSource, 0755, true);
+file_put_contents($dirNestedFile, 'Move the whole directory');
+$response = ApiTestHelpers::post('/api/move/', [
+    'path' => '',
+    'name' => 'move-dir-src',
+    'destinationPath' => 'move-test-dest',
+]);
+ApiTestHelpers::assertSuccess($response, 'Move directory');
+ApiTestHelpers::assertTrue(!is_dir($dirSource), 'Original directory removed');
+ApiTestHelpers::assertTrue(is_dir($testDir2 . '/move-dir-src'), 'Directory moved to destination');
+ApiTestHelpers::assertTrue(
+    file_exists($testDir2 . '/move-dir-src/nested.txt'),
+    'Nested file preserved during directory move'
+);
+@unlink($testDir2 . '/move-dir-src/nested.txt');
+@rmdir($testDir2 . '/move-dir-src');
+echo "OK\n";
+
+// Test 5: Reject path traversal in source path
 echo "  - Reject path traversal in source path... ";
 $response = ApiTestHelpers::post('/api/move/', [
     'path'            => '../../../etc',
@@ -85,7 +107,7 @@ $response = ApiTestHelpers::post('/api/move/', [
 ApiTestHelpers::assertError($response, 400, 'Path traversal in source rejected');
 echo "OK\n";
 
-// Test 5: Reject path traversal in destination path
+// Test 6: Reject path traversal in destination path
 echo "  - Reject path traversal in destination path... ";
 $srcFile5 = $testDir1 . '/traversal-test.txt';
 file_put_contents($srcFile5, 'Test content');
@@ -98,7 +120,7 @@ ApiTestHelpers::assertError($response, 400, 'Path traversal in destination rejec
 @unlink($srcFile5);
 echo "OK\n";
 
-// Test 6: Reject non-existent source file
+// Test 7: Reject non-existent source file
 echo "  - Reject non-existent source file... ";
 $response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
@@ -108,7 +130,7 @@ $response = ApiTestHelpers::post('/api/move/', [
 ApiTestHelpers::assertError($response, 400, 'Non-existent source file rejected');
 echo "OK\n";
 
-// Test 7: Reject non-existent destination directory
+// Test 8: Reject non-existent destination directory
 echo "  - Reject non-existent destination directory... ";
 $srcFile7 = $testDir1 . '/dest-not-exist-test.txt';
 file_put_contents($srcFile7, 'Test content');
@@ -121,7 +143,7 @@ ApiTestHelpers::assertError($response, 400, 'Non-existent destination rejected')
 @unlink($srcFile7);
 echo "OK\n";
 
-// Test 8: Reject missing name parameter
+// Test 9: Reject missing name parameter
 echo "  - Reject missing name parameter... ";
 $response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
@@ -131,7 +153,7 @@ $response = ApiTestHelpers::post('/api/move/', [
 ApiTestHelpers::assertError($response, 400, 'Missing name rejected');
 echo "OK\n";
 
-// Test 9: Reject missing destinationPath parameter
+// Test 10: Reject missing destinationPath parameter
 echo "  - Reject missing destinationPath parameter... ";
 $response = ApiTestHelpers::post('/api/move/', [
     'path'            => 'move-test-src',
@@ -141,7 +163,21 @@ $response = ApiTestHelpers::post('/api/move/', [
 ApiTestHelpers::assertError($response, 400, 'Missing destinationPath rejected');
 echo "OK\n";
 
-// Test 10: Reject GET method (move is POST-only)
+// Test 11: Reject slash in name parameter
+echo "  - Reject slash in name parameter... ";
+$nestedMoveSource = DATA_DIR . '/directory/move-path-injection.txt';
+file_put_contents($nestedMoveSource, 'Stay in place');
+$response = ApiTestHelpers::post('/api/move/', [
+    'path' => '',
+    'name' => 'directory/move-path-injection.txt',
+    'destinationPath' => 'move-test-dest',
+]);
+ApiTestHelpers::assertError($response, 400, 'Slash in name rejected');
+ApiTestHelpers::assertTrue(file_exists($nestedMoveSource), 'Nested source file unchanged after rejected move');
+@unlink($nestedMoveSource);
+echo "OK\n";
+
+// Test 12: Reject GET method (move is POST-only)
 echo "  - Reject GET method... ";
 $response = ApiTestHelpers::get('/api/move/', [
     'path'            => 'move-test-src',

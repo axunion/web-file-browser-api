@@ -81,14 +81,53 @@ final class UploadValidator
             throw new RuntimeException('Target path is not a writable directory.');
         }
 
-        $destPath = PathSecurity::constructSequentialFilePath($targetDir, $file['name']);
+        return PathSecurity::constructSequentialFilePath(
+            $targetDir,
+            $file['name'],
+            function (string $destPath) use ($file): void {
+                if (!move_uploaded_file($file['tmp_name'], $destPath)) {
+                    throw new RuntimeException('Failed to store the uploaded file.');
+                }
+            }
+        );
+    }
 
-        if (!move_uploaded_file($file['tmp_name'], $destPath)) {
-            $err = error_get_last()['message'] ?? 'Unknown error';
-            throw new RuntimeException("Failed to move uploaded file: {$err}");
+    /**
+     * Normalize $_FILES batch payloads so both `images[]` and a single `images`
+     * field can be processed consistently.
+     *
+     * @param array $files Files array from $_FILES
+     * @return array Normalized files array with list values for all keys
+     * @throws ValidationException If the payload shape is invalid
+     */
+    public static function normalizeBatchFiles(array $files): array
+    {
+        $requiredKeys = ['name', 'type', 'tmp_name', 'error', 'size'];
+
+        foreach ($requiredKeys as $key) {
+            if (!array_key_exists($key, $files)) {
+                throw new ValidationException('Invalid batch upload payload.');
+            }
         }
 
-        return $destPath;
+        if (!is_array($files['name'])) {
+            return [
+                'name' => [$files['name']],
+                'type' => [$files['type']],
+                'tmp_name' => [$files['tmp_name']],
+                'error' => [$files['error']],
+                'size' => [$files['size']],
+            ];
+        }
+
+        $count = count($files['name']);
+        foreach ($requiredKeys as $key) {
+            if (!is_array($files[$key]) || count($files[$key]) !== $count) {
+                throw new ValidationException('Invalid batch upload payload.');
+            }
+        }
+
+        return $files;
     }
 
     private function checkUploadError(int $errorCode): void
@@ -119,7 +158,7 @@ final class UploadValidator
         $finfo = new finfo(FILEINFO_MIME_TYPE);
         $mime = $finfo->file($tmpName);
 
-        if (!in_array($mime, $this->allowedMimeTypes, true)) {
+        if ($mime === false || !in_array($mime, $this->allowedMimeTypes, true)) {
             throw new ValidationException('File type not allowed.');
         }
     }

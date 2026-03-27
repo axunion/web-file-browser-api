@@ -8,10 +8,10 @@ validateMethod(['POST']);
 
 try {
     if (!isset($_FILES['images'])) {
-        throw new RuntimeException('No files uploaded under "images" key.');
+        throw new ValidationException('No files uploaded under "images" key.');
     }
 
-    $files = $_FILES['images'];
+    $files = UploadValidator::normalizeBatchFiles($_FILES['images']);
     $validator = new UploadValidator(
         allowedMimeTypes: Config::BATCH_UPLOAD_ALLOWED_TYPES,
         maxFileSize: Config::BATCH_FILE_MAX_SIZE

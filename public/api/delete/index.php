@@ -11,8 +11,10 @@ try {
     $currentName = getInput(INPUT_POST, 'name', '');
 
     if ($currentName === '') {
-        throw new RuntimeException('Current file name is required.');
+        throw new ValidationException('Current file name is required.');
     }
+
+    PathSecurity::validateFileName($currentName);
 
     $targetDir = resolvePath($subPath);
 

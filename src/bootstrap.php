@@ -183,15 +183,17 @@ function handleError(Throwable $e): void
     error_log('API error: ' . $e->getMessage());
 
     // User input errors (400 Bad Request)
-    if ($e instanceof PathException ||
-        $e instanceof ValidationException ||
-        $e instanceof DirectoryException) {
+    if ($e instanceof PathException || $e instanceof ValidationException) {
         sendError($e->getMessage(), 400);
+    }
+
+    if ($e instanceof DirectoryException) {
+        sendError('The requested directory operation could not be completed.', 400);
     }
 
     // Runtime/business logic errors (400 Bad Request)
     if ($e instanceof RuntimeException) {
-        sendError($e->getMessage(), 400);
+        sendError('The requested operation could not be completed.', 400);
     }
 
     // Unexpected errors (500 Internal Server Error)

@@ -74,6 +74,10 @@ $response = ApiTestHelpers::post('/api/delete/', [
     'name' => 'this-file-does-not-exist.txt',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Non-existent file handled');
+ApiTestHelpers::assertTrue(
+    !str_contains($response['body'], DATA_DIR),
+    'Delete error response does not leak internal data path'
+);
 echo "OK\n";
 
 // Test 6: Reject GET method (delete is POST-only)
@@ -84,11 +88,15 @@ echo "OK\n";
 
 // Test 7: Reject slash in name parameter (path separator injection)
 echo "  - Reject slash in name parameter... ";
+$nestedDeleteTarget = DATA_DIR . '/directory/delete-path-injection.txt';
+file_put_contents($nestedDeleteTarget, 'Keep me');
 $response = ApiTestHelpers::post('/api/delete/', [
     'path' => '',
-    'name' => 'subdir/file.txt',
+    'name' => 'directory/delete-path-injection.txt',
 ]);
 ApiTestHelpers::assertError($response, 400, 'Slash in name rejected');
+ApiTestHelpers::assertTrue(file_exists($nestedDeleteTarget), 'Nested file unchanged after rejected delete');
+@unlink($nestedDeleteTarget);
 echo "OK\n";
 
 echo "All delete endpoint tests passed!\n";

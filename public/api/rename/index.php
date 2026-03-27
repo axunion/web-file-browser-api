@@ -12,12 +12,14 @@ try {
     $newName     = getInput(INPUT_POST, 'newName', '');
 
     if ($currentName === '') {
-        throw new RuntimeException('Current file name is required.');
+        throw new ValidationException('Current file name is required.');
     }
 
     if ($newName === '') {
-        throw new RuntimeException('New file name is required.');
+        throw new ValidationException('New file name is required.');
     }
+
+    PathSecurity::validateFileName($currentName);
 
     $targetDir = resolvePath($subPath);
 

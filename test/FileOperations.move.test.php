@@ -75,15 +75,19 @@ assertException(
 );
 
 
-// 6. Passing a directory (not a file) throws exception
+// 6. Moving a directory preserves its contents
 $subDirToMove = $realSourceDir . '/subdir_to_move';
 mkdir($subDirToMove, 0777, true);
-assertException(
-    function () use ($subDirToMove, $destDir) {
-        FileOperations::move($subDirToMove, $destDir);
-    },
-    'FileOperations::move: directory source rejected (move is file-only)'
+file_put_contents($subDirToMove . '/nested.txt', 'nested');
+$movedDirPath = FileOperations::move($subDirToMove, $destDir);
+assertEquals(
+    $realDestDir . '/subdir_to_move',
+    $movedDirPath,
+    'FileOperations::move: directory move returns destination path'
 );
+assertEquals(false, is_dir($subDirToMove), 'FileOperations::move: original directory removed');
+assertEquals(true, is_dir($movedDirPath), 'FileOperations::move: moved directory exists');
+assertEquals(true, file_exists($movedDirPath . '/nested.txt'), 'FileOperations::move: moved directory contents preserved');
 
 // Cleanup temporary dirs
 rrmdir($realSourceDir);

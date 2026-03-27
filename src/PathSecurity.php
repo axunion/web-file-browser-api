@@ -59,7 +59,9 @@ final class PathSecurity
             throw new ValidationException("The file name cannot be empty.");
         }
 
-        if (mb_strlen($fileName, 'UTF-8') > 255) {
+        $length = function_exists('mb_strlen') ? mb_strlen($fileName, 'UTF-8') : strlen($fileName);
+
+        if ($length > 255) {
             throw new ValidationException("The file name exceeds the maximum length of 255 characters.");
         }
 
@@ -79,14 +81,15 @@ final class PathSecurity
     }
 
     /**
-     * Construct a unique file path in the destination directory by appending a counter if needed.
+     * Construct and claim a unique file path in the destination directory.
      *
      * @param string $directoryPath Absolute path to the target directory.
      * @param string $filename      Desired filename (with or without extension).
+     * @param callable $creator     Callback that must create or move the target at the chosen path.
      * @return string               Unique file path within the directory.
      * @throws PathException        If the directory is invalid or not writable.
      */
-    public static function constructSequentialFilePath(string $directoryPath, string $filename): string
+    public static function constructSequentialFilePath(string $directoryPath, string $filename, callable $creator): string
     {
         $realDir = realpath($directoryPath);
 
@@ -110,18 +113,19 @@ final class PathSecurity
         flock($fp, LOCK_EX);
 
         try {
-            if (!file_exists($candidate)) {
-                return $candidate;
+            if (file_exists($candidate)) {
+                $counter = 1;
+
+                do {
+                    $candidate = $realDir . $baseName . '_' . $counter . $extPart;
+                    $counter++;
+                } while (file_exists($candidate));
             }
 
-            $counter = 1;
+            $creator($candidate);
+            clearstatcache(true, $candidate);
 
-            do {
-                $candidate = $realDir . $baseName . '_' . $counter . $extPart;
-                $counter++;
-            } while (file_exists($candidate));
-
-            return $candidate;
+            return realpath($candidate) ?: $candidate;
         } finally {
             flock($fp, LOCK_UN);
             fclose($fp);

@@ -8,7 +8,7 @@ validateMethod(['POST']);
 
 try {
     if (!isset($_FILES['file'])) {
-        throw new RuntimeException('No file uploaded.');
+        throw new ValidationException('No file uploaded.');
     }
 
     $validator = new UploadValidator(

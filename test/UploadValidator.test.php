@@ -83,6 +83,30 @@ assertException(
     ValidationException::class
 );
 
+// Test 6: normalizeBatchFiles - scalar payload becomes one-item batch
+$normalized = UploadValidator::normalizeBatchFiles([
+    'name' => 'single.jpg',
+    'type' => 'image/jpeg',
+    'tmp_name' => '/tmp/single',
+    'error' => UPLOAD_ERR_OK,
+    'size' => 123,
+]);
+assertEquals(['single.jpg'], $normalized['name'], 'UploadValidator: scalar batch name normalized');
+assertEquals([123], $normalized['size'], 'UploadValidator: scalar batch size normalized');
+
+// Test 7: normalizeBatchFiles - inconsistent payload rejected
+assertException(
+    fn() => UploadValidator::normalizeBatchFiles([
+        'name' => ['a.jpg'],
+        'type' => ['image/jpeg', 'image/png'],
+        'tmp_name' => ['/tmp/a'],
+        'error' => [UPLOAD_ERR_OK],
+        'size' => [10],
+    ]),
+    'UploadValidator: inconsistent batch payload rejected',
+    ValidationException::class
+);
+
 // Note: checkIsUploaded, checkFileSize, and checkMimeType in validate() require
 // a real HTTP-uploaded file (is_uploaded_file check). These paths are covered
 // by the API integration tests in test-api/upload.test.php and

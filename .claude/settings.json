@@ -1,11 +1,18 @@
 {
+  "sandbox": {
+    "enabled": true
+  },
+  "autoAllowBashIfSandboxed": true,
   "permissions": {
-    "allow": [
-      "Bash(php test/run-all.php)",
-      "Bash(php test-api/run-all.php)",
-      "Bash(php test-api/*.test.php)",
-      "Bash(php test/*.test.php)",
-      "Bash(php -l *)"
+    "deny": [
+      "Bash(rm -rf*)",
+      "Bash(rm -r*)",
+      "Bash(git push*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(sudo *)",
+      "Bash(chmod *)",
+      "Bash(chown *)"
     ]
   }
 }

@@ -276,12 +276,13 @@ paths:
 
   /delete/:
     post:
-      summary: Move a file to trash (soft delete)
+      summary: Move a file or directory to trash (soft delete)
       description: |
-        Moves a file to the trash directory. This is a **soft delete** — the file
-        is not permanently removed.
+        Moves a file or directory to the trash directory. This is a **soft
+        delete** — the item is not permanently removed. There is no restore
+        endpoint; trash can only be listed via `/list/`.
 
-        If a file with the same name already exists in trash, a sequential suffix
+        If an item with the same name already exists in trash, a sequential suffix
         is appended automatically (e.g. `file_1.txt`). The `filename` field in
         the response reflects the final name in trash.
       requestBody:
@@ -296,15 +297,15 @@ paths:
                 path:
                   type: string
                   default: ""
-                  description: Directory containing the file to delete.
+                  description: Directory containing the item to delete.
                   example: "documents"
                 name:
                   type: string
-                  description: Filename to move to trash.
+                  description: Filename or directory name to move to trash.
                   example: "old-report.pdf"
       responses:
         "200":
-          description: File moved to trash successfully
+          description: Item moved to trash successfully
           content:
             application/json:
               schema:

@@ -10,7 +10,7 @@ The URL prefix depends on where you deploy the `public/api/` directory. Configur
 const API_BASE = "/api";  // adjust to match your PUBLIC_DIR deployment path
 ```
 
-For example, if `PUBLIC_DIR` is `/home/user/public_html/files/api/`, the base URL is `/files/api`.
+The whole `public/` directory is deployed into `PUBLIC_DIR`, so the API lives in its `api/` subdirectory. For example, if `PUBLIC_DIR` is `/home/user/public_html/files/`, the base URL is `/files/api`.
 
 ## Response Format
 
@@ -76,7 +76,7 @@ const trash = await apiFetch(`${API_BASE}/list/?path=trash/`);
 
 ### Upload a single file
 
-**Allowed types**: JPEG, PNG, PDF — **Max size**: 100 MB
+**Allowed types**: JPEG, PNG, WebP, PDF, MP4/WebM/QuickTime video, MP3/OGG/M4A/WAV audio, ZIP — **Max size**: 100 MB
 
 ```js
 // POST /upload/
@@ -100,7 +100,10 @@ const data = await apiFetch(`${API_BASE}/upload/`, {
 
 ### Batch image upload
 
-**Allowed types**: JPEG, PNG only — **Limits**: 10 files max, 10 MB per file, 30 MB total
+**Allowed types**: JPEG, PNG, WebP, HEIC, HEIF — **Limits**: 10 files max, 10 MB per file, 30 MB total
+
+Files are saved one by one, so if a later file is rejected (e.g. wrong type), the
+earlier files in the batch are already saved even though the response is an error.
 
 ```js
 // POST /upload-images/
@@ -144,9 +147,10 @@ const data = await apiFetch(`${API_BASE}/rename/`, {
 
 ---
 
-### Delete a file (move to trash)
+### Delete a file or directory (move to trash)
 
-This is a **soft delete** — files are moved to the trash directory, not permanently removed.
+This is a **soft delete** — items are moved to the trash directory, not permanently removed.
+The API has no restore endpoint; trash can only be listed.
 
 ```js
 // POST /delete/
@@ -155,7 +159,7 @@ const data = await apiFetch(`${API_BASE}/delete/`, {
   method: "POST",
   headers: { "Content-Type": "application/x-www-form-urlencoded" },
   body: new URLSearchParams({
-    path: "documents",  // directory containing the file (empty string for root)
+    path: "documents",  // directory containing the item (empty string for root)
     name: "old-report.pdf",
   }),
 });
@@ -221,6 +225,10 @@ form.append("images[]", file2);
 |----------|---------------|-------------|-----------|
 | `/upload/` | 100 MB | — | 1 |
 | `/upload-images/` | 10 MB | 30 MB | 10 |
+
+File types are detected from the file content, not the extension. The server's PHP
+`upload_max_filesize` / `post_max_size` must also allow these sizes; a request over
+`post_max_size` arrives with no files and fails with a "No file(s) uploaded" error.
 
 ### Collision handling differences
 

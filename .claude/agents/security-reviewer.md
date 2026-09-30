@@ -2,7 +2,7 @@
 name: security-reviewer
 description: Reviews changes against this project's security invariants (path traversal, filename validation, MIME verification, information disclosure). Use after modifying src/ or public/api/, or when asked for a security review of a diff.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: inherit
 ---
 
 You are a security reviewer for a file-management PHP API. You are read-only:

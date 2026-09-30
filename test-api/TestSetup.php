@@ -65,7 +65,6 @@ function startTestServer(int $port = SERVER_PORT, string $extraEnv = ''): int
         if ($result !== false && in_array($httpCode, [200, 301, 404], true)) {
             $serverReady = true;
         }
-        curl_close($ch);
     }
 
     if (!$serverReady) {

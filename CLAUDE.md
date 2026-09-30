@@ -27,7 +27,7 @@ notes and other throwaway dev artifacts stay in the user's language.
 
 ## Project
 
-Security-first, framework-free PHP (>=8.1) file-management API. Look things up rather
+Security-first, framework-free PHP (>=8.2) file-management API. Look things up rather
 than relying on this file: `README.md` (deployment, `src/config.local.php`, test
 commands), `docs/openapi.yaml` (endpoint contract), `src/bootstrap.php` (request helpers,
 exception-to-status mapping), and any `public/api/*/index.php` (endpoint pattern).

@@ -14,7 +14,7 @@ A secure, lightweight PHP API for file management operations. Built with securit
 
 ## Requirements
 
-- PHP 8.1 or higher
+- PHP 8.2 or higher
 - Web server (Apache/Nginx)
 - Write permissions for `data/` and `trash/` directories (located beside the deployed API directory)
 

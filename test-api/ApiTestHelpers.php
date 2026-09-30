@@ -72,13 +72,11 @@ final class ApiTestHelpers
 
         if (!is_string($response)) {
             $err = curl_error($ch);
-            curl_close($ch);
             throw new RuntimeException('cURL GET error: ' . $err);
         }
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        curl_close($ch);
 
         $headers = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);
@@ -115,13 +113,11 @@ final class ApiTestHelpers
 
         if (!is_string($response)) {
             $err = curl_error($ch);
-            curl_close($ch);
             throw new RuntimeException('cURL POST error: ' . $err);
         }
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        curl_close($ch);
 
         $headers = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);
@@ -177,13 +173,11 @@ final class ApiTestHelpers
 
         if (!is_string($response)) {
             $error = curl_error($ch);
-            curl_close($ch);
             throw new RuntimeException("cURL multipart error: $error");
         }
 
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-        curl_close($ch);
 
         $headers = substr($response, 0, $headerSize);
         $body = substr($response, $headerSize);

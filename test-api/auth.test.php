@@ -51,7 +51,6 @@ try {
     curl_setopt($ch, CURLOPT_TIMEOUT, 5);
     curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
     ApiTestHelpers::assertEquals(204, $httpCode, 'OPTIONS preflight unauthenticated');
     echo "OK\n";
 } finally {

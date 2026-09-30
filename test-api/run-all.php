@@ -9,7 +9,7 @@ declare(strict_types=1);
  * Usage: php test-api/run-all.php
  *
  * For Docker environments:
- * docker run --rm -it -v $PWD:/app -w /app php:8.4-apache php test-api/run-all.php
+ * docker run --rm -it -v $PWD:/app -w /app php:8.5-apache php test-api/run-all.php
  */
 
 // Indicate that server is managed by this runner

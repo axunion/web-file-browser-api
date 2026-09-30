@@ -9,7 +9,7 @@ Run all project checks: unit tests, API tests, and PHPStan static analysis.
 
 ## Step 1: Detect a PHP runtime
 
-The project requires PHP >= 8.1 with the `fileinfo`, `intl`, `mbstring`, and `curl`
+The project requires PHP >= 8.2 with the `fileinfo`, `intl`, `mbstring`, and `curl`
 extensions. Developers are free to provide PHP however they like — do NOT assume a
 specific setup. Detect one in this order and use the first that works:
 
@@ -22,7 +22,7 @@ specific setup. Detect one in this order and use the first that works:
    prefix every command with
 
    ```bash
-   docker run --rm -v "$PWD:/app" -w /app php:8.4-apache
+   docker run --rm -v "$PWD:/app" -w /app php:8.5-apache
    ```
 
    Never pass `-it` (fails in non-interactive shells). Note: files the tests
@@ -45,7 +45,7 @@ php vendor/bin/phpstan analyse --no-progress --memory-limit=512M
 ```
 
 If `vendor/` is missing, install dev dependencies first: `composer install`
-(with docker use the `composer:2` image, since `php:8.4-apache` has no composer).
+(with docker use the `composer:2` image, since `php:8.5-apache` has no composer).
 
 ## Step 3: Report
 

@@ -31,6 +31,10 @@ echo "OK\n";
 echo "  - Reject path traversal attempt... ";
 $response = ApiTestHelpers::get('/api/list/', ['path' => '../../../etc']);
 ApiTestHelpers::assertError($response, 400, 'Path traversal rejected');
+foreach (['..', 'trash/..'] as $dotDotPath) {
+    $response = ApiTestHelpers::get('/api/list/', ['path' => $dotDotPath]);
+    ApiTestHelpers::assertError($response, 400, "Trailing dot-dot rejected ({$dotDotPath})");
+}
 echo "OK\n";
 
 // Test 4: Non-existent directory

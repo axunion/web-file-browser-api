@@ -29,6 +29,12 @@ final class PathSecurity
             return $realBase;
         }
 
+        // Only the parent is canonicalized below, so a trailing ".." segment
+        // (e.g. "..", "sub/../..") would otherwise resolve outside the base.
+        if (in_array('..', explode('/', str_replace('\\', '/', $userPath)), true)) {
+            throw new PathException('Attempt to escape base directory.');
+        }
+
         $combined   = $realBase . DIRECTORY_SEPARATOR . ltrim($userPath, '/\\');
         $parentDir  = dirname($combined);
         $realParent = realpath($parentDir);
@@ -74,7 +80,9 @@ final class PathSecurity
             throw new ValidationException("The file name exceeds the maximum length of 255 characters.");
         }
 
-        if (preg_match('/[<>:"\/\\\\|\?\*\x00-\x1F]/u', $fileName)) {
+        // preg_match() returns false (not 1) for invalid UTF-8 under /u, so
+        // treat anything but 0 as invalid.
+        if (preg_match('/[<>:"\/\\\\|\?\*\x00-\x1F]/u', $fileName) !== 0) {
             throw new ValidationException("The file name contains invalid characters.");
         }
 

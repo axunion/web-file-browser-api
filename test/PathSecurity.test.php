@@ -51,6 +51,19 @@ assertException(function () use ($base) {
     PathSecurity::resolveSafePath($base, '../etc/passwd');
 }, 'PathSecurity::resolveSafePath: escape base');
 
+// 2b. Trailing ".." segments must not resolve to the base's parent
+foreach (['..', 'subdir/../..', '../'] as $dotDotPath) {
+    assertException(function () use ($base, $dotDotPath) {
+        PathSecurity::resolveSafePath($base, $dotDotPath);
+    }, "PathSecurity::resolveSafePath: trailing dot-dot ({$dotDotPath})", PathException::class);
+}
+
+// 2c. Segments that merely contain dots are not treated as ".."
+foreach (['a..b', 'subdir/...'] as $dottedPath) {
+    PathSecurity::resolveSafePath($base, $dottedPath);
+    echo "PASS: PathSecurity::resolveSafePath: dotted segment allowed ({$dottedPath})\n";
+}
+
 // 3. Invalid base directory
 assertException(function () {
     PathSecurity::resolveSafePath('/no/such/dir', 'file');
@@ -104,6 +117,11 @@ assertException(function () {
 assertException(function () {
     PathSecurity::validateFileName('.hidden');
 }, 'PathSecurity::validateFileName: leading dot (.hidden)', ValidationException::class);
+
+// 9c2. Invalid UTF-8 is rejected (preg_match /u returns false, not 1)
+assertException(function () {
+    PathSecurity::validateFileName("bad\xFF.jpg");
+}, 'PathSecurity::validateFileName: invalid UTF-8', ValidationException::class);
 
 // 9d. Interior dots remain valid
 PathSecurity::validateFileName('name.with.dots.txt');

@@ -17,6 +17,12 @@ FilterProtocol COMPRESS DEFLATE change=yes;byteranges=no
 RewriteEngine On
 
 #
+# Uploaded content is data, never code: refuse script-like names under
+# data/ and trash/ (including double extensions and PATH_INFO forms)
+#
+RewriteRule ^(?:data|trash)/.*\.(?:ph(?:p\d*|ar|tml|ps|t)|cgi|pl|py|sh)(?:[./]|$) - [NC,F]
+
+#
 # http -> https
 #
 RewriteCond %{HTTPS} off

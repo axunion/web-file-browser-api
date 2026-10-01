@@ -36,6 +36,7 @@ Required repository secrets: `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD`, `PUBL
 A manual dry run is available under **Actions → Deploy → Run workflow**.
 
 `data/` and `trash/` are created beside `api/` on first request if missing; the web server needs write access there.
+`public/.htaccess` refuses requests for script-like files (`.php`, `.phtml`, etc.) under them so uploads can never execute; on a non-Apache server, add an equivalent rule.
 
 ### Configuration
 

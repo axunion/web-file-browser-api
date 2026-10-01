@@ -13,18 +13,14 @@ enum ItemType: string
  */
 class DirectoryItem
 {
-    public ItemType $type;
-    public string $name;
-
     /**
      * @param ItemType $type Type of the item (file or directory)
      * @param string   $name Name of the file or directory
      */
-    public function __construct(ItemType $type, string $name)
-    {
-        $this->type = $type;
-        $this->name = $name;
-    }
+    public function __construct(
+        public ItemType $type,
+        public string $name
+    ) {}
 }
 
 /**
@@ -72,17 +68,14 @@ final class DirectoryScanner
                 continue;
             }
 
-            if ($info->isDir()) {
-                $items[] = new DirectoryItem(
-                    ItemType::DIRECTORY,
-                    $info->getFilename()
-                );
-            } elseif ($info->isFile()) {
-                $items[] = new DirectoryItem(
-                    ItemType::FILE,
-                    $info->getFilename()
-                );
+            if (!$info->isDir() && !$info->isFile()) {
+                continue;
             }
+
+            $items[] = new DirectoryItem(
+                $info->isDir() ? ItemType::DIRECTORY : ItemType::FILE,
+                $info->getFilename()
+            );
         }
 
         // Sort: directories first, then files; natural, case-insensitive order

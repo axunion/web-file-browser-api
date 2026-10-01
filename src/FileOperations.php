@@ -7,6 +7,8 @@ declare(strict_types=1);
  */
 final class FileOperations
 {
+    private const MOVE_FAILED = 'Failed to move the requested item.';
+
     /**
      * Moves the specified file or directory to the target directory, handling
      * naming collisions robustly.
@@ -35,7 +37,9 @@ final class FileOperations
         $filename = basename($realSrc);
         PathSecurity::validateFileName($filename);
 
-        if (is_dir($realSrc)) {
+        $isDir = is_dir($realSrc);
+
+        if ($isDir) {
             $sourcePrefix = rtrim($realSrc, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
             if (strncmp($realDest, $sourcePrefix, strlen($sourcePrefix)) === 0) {
                 throw new RuntimeException('Cannot move a directory into itself.');
@@ -45,29 +49,29 @@ final class FileOperations
         return PathSecurity::constructSequentialFilePath(
             $realDest,
             $filename,
-            function (string $target) use ($realSrc): void {
+            function (string $target) use ($realSrc, $isDir): void {
                 if (@rename($realSrc, $target)) {
                     return;
                 }
 
                 $error = error_get_last()['message'] ?? '';
                 if (!self::isCrossDeviceError($error)) {
-                    throw new RuntimeException('Failed to move the requested item.');
+                    throw new RuntimeException(self::MOVE_FAILED);
                 }
 
-                if (is_dir($realSrc)) {
+                if ($isDir) {
                     self::copyDirectory($realSrc, $target);
                     self::removeDirectory($realSrc);
                     return;
                 }
 
                 if (!@copy($realSrc, $target)) {
-                    throw new RuntimeException('Failed to move the requested item.');
+                    throw new RuntimeException(self::MOVE_FAILED);
                 }
 
                 if (!@unlink($realSrc)) {
                     @unlink($target);
-                    throw new RuntimeException('Failed to move the requested item.');
+                    throw new RuntimeException(self::MOVE_FAILED);
                 }
             }
         );
@@ -120,13 +124,13 @@ final class FileOperations
     private static function copyDirectory(string $source, string $target): void
     {
         if (!@mkdir($target, 0755)) {
-            throw new RuntimeException('Failed to move the requested item.');
+            throw new RuntimeException(self::MOVE_FAILED);
         }
 
         $items = scandir($source);
         if ($items === false) {
             @rmdir($target);
-            throw new RuntimeException('Failed to move the requested item.');
+            throw new RuntimeException(self::MOVE_FAILED);
         }
 
         try {
@@ -144,7 +148,7 @@ final class FileOperations
                 }
 
                 if (!@copy($sourcePath, $targetPath)) {
-                    throw new RuntimeException('Failed to move the requested item.');
+                    throw new RuntimeException(self::MOVE_FAILED);
                 }
             }
         } catch (Throwable $e) {
@@ -160,7 +164,7 @@ final class FileOperations
     {
         $items = scandir($directory);
         if ($items === false) {
-            throw new RuntimeException('Failed to move the requested item.');
+            throw new RuntimeException(self::MOVE_FAILED);
         }
 
         foreach ($items as $item) {
@@ -173,13 +177,13 @@ final class FileOperations
                 self::removeDirectory($path);
             } else {
                 if (!@unlink($path)) {
-                    throw new RuntimeException('Failed to move the requested item.');
+                    throw new RuntimeException(self::MOVE_FAILED);
                 }
             }
         }
 
         if (!@rmdir($directory)) {
-            throw new RuntimeException('Failed to move the requested item.');
+            throw new RuntimeException(self::MOVE_FAILED);
         }
     }
 }

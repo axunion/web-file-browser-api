@@ -83,10 +83,7 @@ if (!defined('API_DATA_DIR') || !defined('API_TRASH_DIR')) {
 
         if (!empty($errors)) {
             error_log('API configuration error: ' . implode(', ', $errors));
-            http_response_code(500);
-            header('Content-Type: application/json; charset=utf-8');
-            echo json_encode(['status' => 'error', 'message' => 'Server configuration error.']);
-            exit;
+            sendError('Server configuration error.', 500);
         }
     }
 
@@ -192,20 +189,17 @@ function resolvePathWithTrash(string $userPath): string
     $segments = explode('/', trim($userPath, '/'));
 
     if ($segments[0] === 'trash') {
-        $base = API_TRASH_DIR;
-        $path = isset($segments[1]) ? implode('/', array_slice($segments, 1)) : '';
-        return PathSecurity::resolveSafePath($base, $path);
+        return PathSecurity::resolveSafePath(API_TRASH_DIR, implode('/', array_slice($segments, 1)));
     }
 
-    return PathSecurity::resolveSafePath(API_DATA_DIR, $userPath);
+    return resolvePath($userPath);
 }
 
 // Safe input retrieval
 /**
  * @param INPUT_GET|INPUT_POST $type
- * @return ($default is string ? string : ?string)
  */
-function getInput(int $type, string $key, ?string $default = null): ?string
+function getInput(int $type, string $key, string $default = ''): string
 {
     $value = filter_input($type, $key, FILTER_UNSAFE_RAW);
 

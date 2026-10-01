@@ -17,6 +17,8 @@ final class UploadValidator
         UPLOAD_ERR_EXTENSION  => 'A PHP extension stopped the file upload.',
     ];
 
+    private ?finfo $finfo = null;
+
     /**
      * @param list<string> $allowedMimeTypes
      */
@@ -113,30 +115,19 @@ final class UploadValidator
             }
         }
 
-        if (!is_array($files['name'])) {
-            return [
-                'name' => [$files['name']],
-                'type' => [$files['type']],
-                'tmp_name' => [$files['tmp_name']],
-                'error' => [$files['error']],
-                'size' => [$files['size']],
-            ];
-        }
+        $isBatch = is_array($files['name']);
+        $count = $isBatch ? count($files['name']) : 1;
+        $normalized = [];
 
-        $count = count($files['name']);
         foreach ($requiredKeys as $key) {
-            if (!is_array($files[$key]) || count($files[$key]) !== $count) {
+            if ($isBatch && (!is_array($files[$key]) || count($files[$key]) !== $count)) {
                 throw new ValidationException('Invalid batch upload payload.');
             }
+
+            $normalized[$key] = $isBatch ? $files[$key] : [$files[$key]];
         }
 
-        return [
-            'name' => $files['name'],
-            'type' => $files['type'],
-            'tmp_name' => $files['tmp_name'],
-            'error' => $files['error'],
-            'size' => $files['size'],
-        ];
+        return $normalized;
     }
 
     private function checkUploadError(int $errorCode): void
@@ -164,8 +155,8 @@ final class UploadValidator
 
     private function checkMimeType(string $tmpName): void
     {
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($tmpName);
+        $this->finfo ??= new finfo(FILEINFO_MIME_TYPE);
+        $mime = $this->finfo->file($tmpName);
 
         if ($mime === false || !in_array($mime, $this->allowedMimeTypes, true)) {
             throw new ValidationException('File type not allowed.');

@@ -18,8 +18,10 @@ specific setup. Detect one in this order and use the first that works:
    `command -v php` alone — it can match a shell alias that wraps docker and
    breaks non-interactively.)
 2. **Docker** — no local `php` but `docker info` succeeds (if docker is installed
-   but the daemon is down and colima is available, run `colima start` first):
-   prefix every command with
+   but the daemon is down and colima is available, run `colima start` first).
+   Run exactly `sh .claude/skills/test/run.sh` — no `cd`, pipes, or redirects —
+   from the repo root: it runs all of Step 2 in one container and may be
+   pre-approved to run outside the sandbox. For any other command, prefix it with
 
    ```bash
    docker run --rm -v "$PWD:/app" -w /app php:8.5-apache
